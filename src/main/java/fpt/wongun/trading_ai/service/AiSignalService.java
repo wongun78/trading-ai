@@ -2,7 +2,6 @@ package fpt.wongun.trading_ai.service;
 
 import fpt.wongun.trading_ai.domain.entity.AiSignal;
 import fpt.wongun.trading_ai.domain.entity.Symbol;
-import fpt.wongun.trading_ai.domain.enums.Direction;
 import fpt.wongun.trading_ai.dto.AiSignalResponseDto;
 import fpt.wongun.trading_ai.dto.AiSuggestRequestDto;
 import fpt.wongun.trading_ai.repository.AiSignalRepository;
@@ -13,6 +12,8 @@ import fpt.wongun.trading_ai.service.analysis.MarketAnalysisService;
 import fpt.wongun.trading_ai.service.analysis.TradeAnalysisContext;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 
@@ -20,6 +21,7 @@ import java.time.Instant;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AiSignalService {
 
     private final SymbolRepository symbolRepository;
@@ -27,7 +29,11 @@ public class AiSignalService {
     private final MarketAnalysisService marketAnalysisService;
     private final AiClient aiClient;
 
+    @Cacheable(value = "aiSignals", key = "#request.symbolCode + '_' + #request.timeframe + '_' + #request.mode", 
+               unless = "#result.reasoning != null && #result.reasoning.contains('unavailable')")
     public AiSignalResponseDto generateSignal(AiSuggestRequestDto request) {
+        log.info("Cache MISS - Calling AI for {}/{}/{}", request.getSymbolCode(), request.getTimeframe(), request.getMode());
+        
         Symbol symbol = symbolRepository.findByCode(request.getSymbolCode())
                 .orElseThrow(() -> new EntityNotFoundException("Symbol not found: " + request.getSymbolCode()));
 
@@ -35,38 +41,26 @@ public class AiSignalService {
 
         TradeSuggestion suggestion = aiClient.suggestTrade(context, request.getMode());
 
-        // Only save to database if we have a valid trade signal (not NEUTRAL fallback)
-        if (suggestion.getDirection() != Direction.NEUTRAL && suggestion.getEntryPrice() != null) {
-            AiSignal entity = AiSignal.builder()
-                    .symbol(symbol)
-                    .timeframe(request.getTimeframe())
-                    .direction(suggestion.getDirection())
-                    .entryPrice(suggestion.getEntryPrice())
-                    .stopLoss(suggestion.getStopLoss())
-                    .takeProfit1(suggestion.getTakeProfit1())
-                    .takeProfit2(suggestion.getTakeProfit2())
-                    .takeProfit3(suggestion.getTakeProfit3())
-                    .riskReward1(suggestion.getRiskReward1())
-                    .riskReward2(suggestion.getRiskReward2())
-                    .riskReward3(suggestion.getRiskReward3())
-                    .reasoning(suggestion.getReasoning())
-                    .createdAt(Instant.now())
-                    .createdBy("system") // sau này map user
-                    .build();
-
-            entity = aiSignalRepository.save(entity);
-            return mapToDto(entity);
-        }
-
-        // For NEUTRAL fallback (AI error), return DTO without saving to DB
-        return AiSignalResponseDto.builder()
-                .id(null)
-                .symbolCode(symbol.getCode())
+        // Save all signals to database (including NEUTRAL)
+        AiSignal entity = AiSignal.builder()
+                .symbol(symbol)
                 .timeframe(request.getTimeframe())
                 .direction(suggestion.getDirection())
+                .entryPrice(suggestion.getEntryPrice())
+                .stopLoss(suggestion.getStopLoss())
+                .takeProfit1(suggestion.getTakeProfit1())
+                .takeProfit2(suggestion.getTakeProfit2())
+                .takeProfit3(suggestion.getTakeProfit3())
+                .riskReward1(suggestion.getRiskReward1())
+                .riskReward2(suggestion.getRiskReward2())
+                .riskReward3(suggestion.getRiskReward3())
                 .reasoning(suggestion.getReasoning())
                 .createdAt(Instant.now())
+                .createdBy("system") // sau này map user
                 .build();
+
+        entity = aiSignalRepository.save(entity);
+        return mapToDto(entity);
     }
 
     public Page<AiSignalResponseDto> getSignals(String symbolCode,

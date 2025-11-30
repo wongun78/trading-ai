@@ -34,10 +34,10 @@ public class AiSignal {
     @Column(nullable = false, length = 10)
     private Direction direction;
 
-    @Column(precision = 18, scale = 6)
+    @Column(precision = 18, scale = 6, nullable = true)
     private BigDecimal entryPrice;
 
-    @Column(precision = 18, scale = 6)
+    @Column(precision = 18, scale = 6, nullable = true)
     private BigDecimal stopLoss;
 
     @Column(precision = 18, scale = 6)

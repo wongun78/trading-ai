@@ -2,6 +2,7 @@ package fpt.wongun.trading_ai.service.market;
 
 import fpt.wongun.trading_ai.domain.entity.Candle;
 import fpt.wongun.trading_ai.domain.entity.Symbol;
+import fpt.wongun.trading_ai.domain.enums.SymbolType;
 import fpt.wongun.trading_ai.repository.CandleRepository;
 import fpt.wongun.trading_ai.repository.SymbolRepository;
 import lombok.RequiredArgsConstructor;
@@ -28,18 +29,18 @@ public class BinanceSyncScheduler {
 
     /**
      * Sync latest candles for all crypto symbols.
-     * Runs every 5 minutes (300,000 ms).
+     * Runs every 5 seconds for real-time updates.
      * 
      * Fetches only the latest 20 candles to minimize API calls.
      */
-    @Scheduled(fixedRate = 300000)  // 5 minutes
+    @Scheduled(fixedRate = 5000)  // 5 seconds
     @Transactional
     public void syncLatestCandles() {
         log.info("Starting scheduled Binance candle sync...");
 
         // Find all crypto symbols (BTCUSDT, ETHUSDT, etc.)
         List<Symbol> cryptoSymbols = symbolRepository.findAll().stream()
-                .filter(s -> s.getType() != null && s.getType().equals("CRYPTO"))
+                .filter(s -> s.getType() == SymbolType.CRYPTO)
                 .toList();
 
         if (cryptoSymbols.isEmpty()) {
@@ -62,8 +63,8 @@ public class BinanceSyncScheduler {
                 String timeframe = existingCandles.get(0).getTimeframe();
                 String interval = BinanceClient.mapTimeframeToInterval(timeframe);
 
-                // Fetch latest 20 candles (enough to update without excessive API calls)
-                List<BinanceKline> klines = binanceClient.fetchKlines(symbol.getCode(), interval, 20);
+                // Fetch latest 200 candles (required for Bob Volman analysis with trend context)
+                List<BinanceKline> klines = binanceClient.fetchKlines(symbol.getCode(), interval, 200);
 
                 if (klines.isEmpty()) {
                     log.warn("No data from Binance for {}/{}. Skipping.", symbol.getCode(), timeframe);

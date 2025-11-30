@@ -12,7 +12,6 @@ import org.springframework.web.reactive.function.client.WebClient;
  * This configuration supports multiple AI providers:
  * - Groq (free, fast, open-source models) - enabled by default
  * - OpenAI (paid, GPT models) - fallback when Groq is disabled
- * - MockAiClient (no API needed) - fallback when both are disabled
  */
 @Configuration
 @EnableConfigurationProperties({OpenAiProperties.class, GroqProperties.class})

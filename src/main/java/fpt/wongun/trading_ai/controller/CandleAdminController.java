@@ -4,6 +4,7 @@ import fpt.wongun.trading_ai.domain.entity.Candle;
 import fpt.wongun.trading_ai.domain.entity.Symbol;
 import fpt.wongun.trading_ai.domain.enums.SymbolType;
 import fpt.wongun.trading_ai.dto.CandleImportDto;
+import fpt.wongun.trading_ai.dto.CandleResponseDto;
 import fpt.wongun.trading_ai.repository.CandleRepository;
 import fpt.wongun.trading_ai.repository.SymbolRepository;
 import fpt.wongun.trading_ai.service.market.BinanceClient;
@@ -16,7 +17,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Admin controller for managing candle data import and deletion.
@@ -40,7 +40,7 @@ public class CandleAdminController {
      * @return List of candles ordered by timestamp descending
      */
     @GetMapping
-    public ResponseEntity<List<Candle>> getCandles(
+    public ResponseEntity<List<CandleResponseDto>> getCandles(
             @RequestParam String symbolCode,
             @RequestParam String timeframe,
             @RequestParam(defaultValue = "200") int limit) {
@@ -56,7 +56,18 @@ public class CandleAdminController {
             candles = candles.subList(0, limit);
         }
         
-        return ResponseEntity.ok(candles);
+        // Map to DTO
+        List<CandleResponseDto> response = candles.stream()
+                .map(c -> CandleResponseDto.builder()
+                        .time(c.getTimestamp())
+                        .open(c.getOpen())
+                        .high(c.getHigh())
+                        .low(c.getLow())
+                        .close(c.getClose())
+                        .build())
+                .collect(java.util.stream.Collectors.toList());
+        
+        return ResponseEntity.ok(response);
     }
 
     /**
