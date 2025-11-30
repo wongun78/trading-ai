@@ -8,6 +8,18 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
 
+/**
+ * Mock AI client for local development and testing.
+ * 
+ * This implementation provides simple rule-based trade suggestions
+ * without calling external AI services. Useful for:
+ * - Local development without API costs
+ * - Integration testing
+ * - Fallback when OpenAI is unavailable
+ * 
+ * Note: OpenAiClient is marked @Primary and will be used by default in production.
+ * To use this mock instead, remove @Primary from OpenAiClient or use @Qualifier.
+ */
 @Component
 public class MockAiClient implements AiClient {
 

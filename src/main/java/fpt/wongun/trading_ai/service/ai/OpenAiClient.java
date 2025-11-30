@@ -12,6 +12,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
+import java.math.BigDecimal;
+import java.math.MathContext;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,26 +42,17 @@ public class OpenAiClient implements AiClient {
      * Based on Bob Volman's price action scalping methodology.
      */
     private static final String SYSTEM_PROMPT = """
-        You are an expert price action trader, trading in the style of Bob Volman.
+        You are an expert intraday price action trader, trading strictly in the style of Bob Volman.
         
-        Your trading philosophy focuses on:
-        - Pure price action analysis with minimal indicators
-        - Market structure: Higher Highs/Higher Lows (HH/HL) for uptrends, Lower Highs/Lower Lows (LH/LL) for downtrends
-        - EMA21 and EMA25 as dynamic support/resistance levels
-        - Clean pullbacks in the direction of the dominant trend
-        - Reading individual candle behavior: rejection wicks, inside bars, engulfing patterns
-        - Supply and demand zones at key price levels
-        - Never chasing extended moves or late breakouts
-        - Being highly selective and conservative with trade setups
-        
-        You specialize in identifying high-probability setups where:
-        1. The trend is clear and well-established
-        2. Price pulls back to a logical support/resistance (often EMA21/25)
-        3. There's clear rejection or confirmation via price action
-        4. Risk/reward ratio is favorable (minimum 1:1.5 for scalping)
-        
-        When there's no clear setup, you have NO hesitation returning NEUTRAL.
-        Quality over quantity is your mantra.
+        Your core rules:
+        - Trade ONLY clean price action.
+        - Do NOT use indicators other than EMA21 and EMA25 (dynamic support/resistance).
+        - Always evaluate HH/HL or LH/LL swing structure to determine trend quality.
+        - Prefer clean pullback entries into the EMA21/EMA25 area, with rejection wicks or strong reaction.
+        - Avoid trading after extended moves. Avoid choppy, overlapping candles. Avoid weak trends.
+        - If context is unclear, messy, or risky, you must choose NEUTRAL (no trade).
+        - You will receive structured market data (candles, EMA21, EMA25, trend) and a trading MODE (SCALPING or INTRADAY).
+        - Your job is to output ONE high-probability trade idea or return NEUTRAL if nothing meets the criteria.
         """;
 
     @Override
@@ -67,8 +61,11 @@ public class OpenAiClient implements AiClient {
             log.info("Requesting trade suggestion from OpenAI for {}/{} in {} mode", 
                     context.getSymbolCode(), context.getTimeframe(), mode);
 
-            // Serialize context to JSON
-            String contextJson = objectMapper.writeValueAsString(context);
+            // Trim candles based on mode (SCALPING=50, INTRADAY=100)
+            TradeAnalysisContext trimmedContext = trimContextByMode(context, mode);
+
+            // Serialize trimmed context to JSON
+            String contextJson = objectMapper.writeValueAsString(trimmedContext);
 
             // Build user prompt with mode-specific instructions
             String userPrompt = buildUserPrompt(mode, contextJson);
@@ -77,7 +74,12 @@ public class OpenAiClient implements AiClient {
             String responseJson = callOpenAiApi(userPrompt);
 
             // Parse response into TradeSuggestion
-            return parseTradeSuggestion(responseJson);
+            TradeSuggestion suggestion = parseTradeSuggestion(responseJson);
+
+            // Apply Volman guards to validate the suggestion
+            suggestion = enforceVolmanGuards(suggestion, mode);
+
+            return suggestion;
 
         } catch (Exception e) {
             log.error("Error calling OpenAI API", e);
@@ -86,56 +88,83 @@ public class OpenAiClient implements AiClient {
     }
 
     /**
+     * Trim context to last N candles based on trading mode.
+     * SCALPING: last 50 candles
+     * INTRADAY: last 100 candles
+     */
+    private TradeAnalysisContext trimContextByMode(TradeAnalysisContext context, String mode) {
+        int candleLimit = mode.equalsIgnoreCase("SCALPING") ? 50 : 100;
+
+        List<TradeAnalysisContext.CandlePoint> candles = context.getCandles();
+        List<BigDecimal> ema21 = context.getEma21();
+        List<BigDecimal> ema25 = context.getEma25();
+
+        int size = candles.size();
+        if (size <= candleLimit) {
+            return context; // Already within limit
+        }
+
+        int startIndex = size - candleLimit;
+
+        return TradeAnalysisContext.builder()
+                .symbolCode(context.getSymbolCode())
+                .timeframe(context.getTimeframe())
+                .higherTimeframeTrend(context.getHigherTimeframeTrend())
+                .candles(new ArrayList<>(candles.subList(startIndex, size)))
+                .ema21(ema21 != null && ema21.size() > candleLimit 
+                        ? new ArrayList<>(ema21.subList(startIndex, size)) 
+                        : ema21)
+                .ema25(ema25 != null && ema25.size() > candleLimit 
+                        ? new ArrayList<>(ema25.subList(startIndex, size)) 
+                        : ema25)
+                .build();
+    }
+
+    /**
      * Build the user prompt with trading mode instructions and market context.
-     * 
-     * Temperature can be adjusted in application.yml (openai.temperature).
-     * Lower temperature (0.2-0.4) = more consistent, focused analysis.
-     * Higher temperature (0.6-0.8) = more creative, varied suggestions.
      */
     private String buildUserPrompt(String mode, String contextJson) {
-        String modeInstructions = mode.equalsIgnoreCase("SCALPING") 
-            ? """
-              MODE: SCALPING
-              - Focus on tight, quick trades
-              - Prefer tight stop losses (10-20 pips typically)
-              - Target TP1 around 1:1.5 risk/reward minimum
-              - TP2 optional at 1:2 to 1:2.5
-              - Exit quickly if price action doesn't confirm immediately
-              - Be extremely selective - only take A+ setups
-              """
-            : """
-              MODE: INTRADAY
-              - Can hold positions longer (minutes to hours)
-              - Stop losses can be wider to account for normal volatility
-              - Target TP1 at 1:2 risk/reward
-              - TP2 at 1:3 to 1:4 if trend is strong
-              - TP3 optional for runners at 1:5+
-              - Still selective, but can give trade more room to breathe
-              """;
-
         return String.format("""
+            MODE: %s
+            
+            Here is the market context as JSON (trimmed to recent candles):
             %s
             
-            MARKET CONTEXT (JSON):
-            %s
+            Bob Volman trading rules to apply:
             
-            ANALYSIS INSTRUCTIONS:
-            1. Focus heavily on the last 30-50 candles for immediate price action context
-            2. Check the higher timeframe trend (provided in context)
-            3. Look for pullbacks to EMA21 or EMA25 in the trend direction
-            4. Identify clear market structure (HH/HL for uptrend, LH/LL for downtrend)
-            5. Look for confirmation: rejection wicks, pin bars, engulfing patterns
-            6. Avoid choppy, sideways, or conflicting price action
-            7. If no clear setup exists, return NEUTRAL without forcing a trade
+            1) Trend & Structure
+            - Use higherTimeframeTrend ("UP", "DOWN", "SIDEWAYS") only as reference.
+            - Confirm trend by checking HH/HL or LH/LL sequences.
+            - Longs only in clean HH/HL uptrend pullbacks.
+            - Shorts only in clean LH/LL downtrend pullbacks.
+            - SIDEWAYS → be extremely conservative, usually NEUTRAL.
             
-            CRITICAL RULES:
-            - DO NOT chase extended moves away from EMAs
-            - DO NOT trade against the higher timeframe trend
-            - DO NOT trade in messy, choppy conditions
-            - When in doubt, return NEUTRAL
+            2) EMA21 & EMA25 Usage
+            - EMAs act like dynamic S/R.
+            - A valid entry requires a pullback into EMA21/25 followed by a strong rejection candle or momentum push-away.
             
-            RESPONSE FORMAT:
-            Return ONLY a valid JSON object with this exact structure:
+            3) MODE Behavior
+            - SCALPING:
+                • Use last ~50 candles
+                • Tight stop-loss
+                • TP1 ≈ 1.2R–1.8R
+                • Reject chop immediately
+            - INTRADAY:
+                • Use last ~100 candles
+                • TP1 ≈ 1.5R, TP2 ≈ 2.5R–3.0R
+                • Avoid extreme or unrealistic R:R
+            
+            4) When to choose NEUTRAL
+            - Trend is unclear or mixed HH/LL
+            - No clean EMA reaction
+            - Last price swing too extended
+            - Overlapping / indecision candles
+            - Market feels "messy" or unsafe
+            - Any doubt → NEUTRAL
+            
+            5) RESPONSE FORMAT (STRICT)
+            Reply with ONLY valid JSON matching EXACTLY this schema:
+            
             {
               "direction": "LONG" | "SHORT" | "NEUTRAL",
               "entryPrice": number or null,
@@ -146,16 +175,14 @@ public class OpenAiClient implements AiClient {
               "riskReward1": number or null,
               "riskReward2": number or null,
               "riskReward3": number or null,
-              "reasoning": "Brief explanation of why this trade setup is valid or why you're staying out (NEUTRAL)"
+              "reasoning": "1-3 sentence explanation"
             }
             
-            - If direction is NEUTRAL, set all price fields to null
-            - If direction is LONG or SHORT, calculate realistic entry/stop/targets based on recent price action
-            - riskReward values should be the ratio (e.g., 1.5 for 1:1.5R)
-            - reasoning should be concise but mention key factors (trend, structure, EMA position, candle patterns)
-            
-            Return ONLY the JSON object, no markdown formatting, no code blocks, no extra text.
-            """, modeInstructions, contextJson);
+            - No text before or after.
+            - No comments.
+            - No markdown.
+            - Only JSON.
+            """, mode, contextJson);
     }
 
     /**
@@ -265,6 +292,68 @@ public class OpenAiClient implements AiClient {
         return TradeSuggestion.builder()
                 .direction(Direction.NEUTRAL)
                 .reasoning("AI service unavailable: " + errorMessage)
+                .build();
+    }
+
+    /**
+     * Enforce Bob Volman trading guards on AI-generated suggestions.
+     * Validates stop-loss distance and risk/reward ratios.
+     * Returns NEUTRAL if validation fails.
+     */
+    private TradeSuggestion enforceVolmanGuards(TradeSuggestion s, String mode) {
+        if (s == null) {
+            return neutral("Invalid AI response");
+        }
+
+        if (s.getDirection() == Direction.NEUTRAL) {
+            return s; // Already neutral, no validation needed
+        }
+
+        if (s.getEntryPrice() == null || s.getStopLoss() == null) {
+            return neutral("Missing entry/SL — rejected by Volman guard");
+        }
+
+        BigDecimal entry = s.getEntryPrice();
+        BigDecimal sl = s.getStopLoss();
+        BigDecimal distancePct = sl.subtract(entry).abs()
+                .divide(entry, MathContext.DECIMAL64)
+                .multiply(BigDecimal.valueOf(100));
+
+        // SL distance rules
+        if (mode.equals("SCALPING") && distancePct.compareTo(BigDecimal.valueOf(0.4)) > 0) {
+            return neutral("SL too wide for scalping — rejected by Volman guard");
+        }
+
+        if (mode.equals("INTRADAY") && distancePct.compareTo(BigDecimal.valueOf(1.0)) > 0) {
+            return neutral("SL too wide for intraday — rejected by Volman guard");
+        }
+
+        // RR sanity rule
+        if (s.getRiskReward1() != null) {
+            if (s.getRiskReward1().compareTo(BigDecimal.valueOf(1.0)) < 0 ||
+                s.getRiskReward1().compareTo(BigDecimal.valueOf(4.0)) > 0) {
+                return neutral("RR1 out of range — rejected by Volman guard");
+            }
+        }
+
+        return s; // Passed validation
+    }
+
+    /**
+     * Helper method to create NEUTRAL suggestion with reasoning.
+     */
+    private TradeSuggestion neutral(String reason) {
+        return TradeSuggestion.builder()
+                .direction(Direction.NEUTRAL)
+                .entryPrice(null)
+                .stopLoss(null)
+                .takeProfit1(null)
+                .takeProfit2(null)
+                .takeProfit3(null)
+                .riskReward1(null)
+                .riskReward2(null)
+                .riskReward3(null)
+                .reasoning(reason)
                 .build();
     }
 }

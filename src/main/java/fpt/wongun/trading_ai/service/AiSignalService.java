@@ -2,6 +2,7 @@ package fpt.wongun.trading_ai.service;
 
 import fpt.wongun.trading_ai.domain.entity.AiSignal;
 import fpt.wongun.trading_ai.domain.entity.Symbol;
+import fpt.wongun.trading_ai.domain.enums.Direction;
 import fpt.wongun.trading_ai.dto.AiSignalResponseDto;
 import fpt.wongun.trading_ai.dto.AiSuggestRequestDto;
 import fpt.wongun.trading_ai.repository.AiSignalRepository;
@@ -34,26 +35,38 @@ public class AiSignalService {
 
         TradeSuggestion suggestion = aiClient.suggestTrade(context, request.getMode());
 
-        AiSignal entity = AiSignal.builder()
-                .symbol(symbol)
+        // Only save to database if we have a valid trade signal (not NEUTRAL fallback)
+        if (suggestion.getDirection() != Direction.NEUTRAL && suggestion.getEntryPrice() != null) {
+            AiSignal entity = AiSignal.builder()
+                    .symbol(symbol)
+                    .timeframe(request.getTimeframe())
+                    .direction(suggestion.getDirection())
+                    .entryPrice(suggestion.getEntryPrice())
+                    .stopLoss(suggestion.getStopLoss())
+                    .takeProfit1(suggestion.getTakeProfit1())
+                    .takeProfit2(suggestion.getTakeProfit2())
+                    .takeProfit3(suggestion.getTakeProfit3())
+                    .riskReward1(suggestion.getRiskReward1())
+                    .riskReward2(suggestion.getRiskReward2())
+                    .riskReward3(suggestion.getRiskReward3())
+                    .reasoning(suggestion.getReasoning())
+                    .createdAt(Instant.now())
+                    .createdBy("system") // sau này map user
+                    .build();
+
+            entity = aiSignalRepository.save(entity);
+            return mapToDto(entity);
+        }
+
+        // For NEUTRAL fallback (AI error), return DTO without saving to DB
+        return AiSignalResponseDto.builder()
+                .id(null)
+                .symbolCode(symbol.getCode())
                 .timeframe(request.getTimeframe())
                 .direction(suggestion.getDirection())
-                .entryPrice(suggestion.getEntryPrice())
-                .stopLoss(suggestion.getStopLoss())
-                .takeProfit1(suggestion.getTakeProfit1())
-                .takeProfit2(suggestion.getTakeProfit2())
-                .takeProfit3(suggestion.getTakeProfit3())
-                .riskReward1(suggestion.getRiskReward1())
-                .riskReward2(suggestion.getRiskReward2())
-                .riskReward3(suggestion.getRiskReward3())
                 .reasoning(suggestion.getReasoning())
                 .createdAt(Instant.now())
-                .createdBy("system") // sau này map user
                 .build();
-
-        entity = aiSignalRepository.save(entity);
-
-        return mapToDto(entity);
     }
 
     public Page<AiSignalResponseDto> getSignals(String symbolCode,

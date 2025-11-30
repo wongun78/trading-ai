@@ -58,7 +58,7 @@ public class AiSignal {
     @Column(precision = 18, scale = 6)
     private BigDecimal riskReward3;
 
-    @Lob
+    @Column(columnDefinition = "TEXT")
     private String reasoning; // JSON or long text
 
     @Column(nullable = false)
