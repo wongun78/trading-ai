@@ -155,39 +155,69 @@ public class GroqAiClient implements AiClient {
             
             Bob Volman trading rules to apply:
             
-            1) Trend & Structure
-            - Use higherTimeframeTrend ("UP", "DOWN", "SIDEWAYS") only as reference.
-            - Confirm trend by checking HH/HL or LH/LL sequences.
-            - Longs only in clean HH/HL uptrend pullbacks.
-            - Shorts only in clean LH/LL downtrend pullbacks.
-            - SIDEWAYS → be extremely conservative, usually NEUTRAL.
+            1) MANDATORY DETAILED ANALYSIS - You MUST analyze these elements:
             
-            2) EMA21 & EMA25 Usage
-            - EMAs act like dynamic S/R.
-            - A valid entry requires a pullback into EMA21/25 followed by a strong rejection candle or momentum push-away.
+            a) SWING STRUCTURE ANALYSIS:
+               - Identify the last 3-5 swing highs and swing lows with EXACT PRICES
+               - Determine if structure is HH/HL (uptrend), LH/LL (downtrend), or mixed
+               - Calculate the distance between swings to assess trend strength
+               - Example: "Last swings: H1=95420, L1=94850, H2=95680, L2=95100 → HH/HL confirmed uptrend"
             
-            3) MODE Behavior
+            b) EMA INTERACTION:
+               - Note EXACT current price vs EMA21 vs EMA25
+               - Count how many candles since last EMA touch/rejection
+               - Measure distance from current price to EMAs (in points and %)
+               - Example: "Price at 95420, EMA21 at 95180 (240pts/0.25% above), last touched 3 candles ago with strong rejection wick"
+            
+            c) RECENT CANDLE PATTERNS:
+               - Analyze the last 5-10 candles in detail
+               - Identify pin bars, engulfing, inside bars with EXACT OHLC values
+               - Measure wick sizes vs body sizes (ratio)
+               - Example: "Candle #47: H=95420, L=94950, C=95380, O=95050 → 470pt bullish body with 40pt upper wick = strong momentum"
+            
+            d) TREND MOMENTUM:
+               - Calculate average candle body size over last 10 candles
+               - Count consecutive bullish/bearish candles
+               - Identify acceleration or deceleration
+               - Example: "Last 8 candles: 6 bullish, avg body 180pts, accelerating from 120pts → strong momentum"
+            
+            e) RISK ZONES:
+               - Identify the EXACT most recent swing high/low for SL placement
+               - Calculate distance from proposed entry to SL
+               - Explain WHY this specific level (structure break, EMA, round number)
+               - Example: "SL at 94850 (last swing low) = 570pts risk from entry 95420 = 0.60%% risk"
+            
+            2) TRADING MODE RULES:
+            
             - SCALPING:
-                • Use last ~50 candles
-                • Tight stop-loss
-                • TP1 ≈ 1.2R–1.8R
-                • Reject chop immediately
+                • Use last ~50 candles for context
+                • SL must be < 0.4%% of entry price
+                • TP1 should be 1.2R-1.8R (scalp target)
+                • Reject any setup with overlapping candles or unclear micro-structure
+            
             - INTRADAY:
-                • Use last ~100 candles
-                • TP1 ≈ 1.5R, TP2 ≈ 2.5R–3.0R
-                • Avoid extreme or unrealistic R:R
+                • Use last ~100 candles for context
+                • SL must be < 1.0%% of entry price
+                • TP1 = 1.5R, TP2 = 2.5R, TP3 = 3.0R (intraday targets)
+                • Accept slightly wider consolidation if macro trend is clear
             
-            4) When to choose NEUTRAL
-            - Trend is unclear or mixed HH/LL
-            - No clean EMA reaction
-            - Last price swing too extended
-            - Overlapping / indecision candles
-            - Market feels "messy" or unsafe
-            - Any doubt → NEUTRAL
+            3) WHEN TO CHOOSE NEUTRAL:
+            - Mixed swing structure (both HH and LL present)
+            - Price extended >1%% from both EMAs with no pullback
+            - Last 10 candles show overlapping ranges (choppy)
+            - No clear rejection pattern or momentum
+            - Any doubt → NEUTRAL with specific reason
             
-            5) RESPONSE FORMAT (STRICT)
-            Reply with ONLY valid JSON matching EXACTLY this schema:
+            4) RESPONSE FORMAT (STRICT JSON):
             
+            You MUST reply with ONLY valid JSON. The "reasoning" field MUST contain:
+            - Line 1: Swing structure with exact prices
+            - Line 2: EMA position and interaction
+            - Line 3: Pattern identification
+            - Line 4: Entry/SL/TP logic with calculations
+            - Line 5: Risk assessment and final decision
+            
+            Schema:
             {
               "direction": "LONG" | "SHORT" | "NEUTRAL",
               "entryPrice": number or null,
@@ -198,13 +228,15 @@ public class GroqAiClient implements AiClient {
               "riskReward1": number or null,
               "riskReward2": number or null,
               "riskReward3": number or null,
-              "reasoning": "1-3 sentence explanation"
+              "reasoning": "DETAILED multi-line analysis with specific prices, measurements, and calculations as described above"
             }
             
-            - No text before or after.
-            - No comments.
-            - No markdown.
-            - Only JSON.
+            Example reasoning format:
+            "Structure: HH/HL uptrend - Last swings H1=95680, L1=95100, H2=95420, L2=94850 confirming HH/HL. EMA: Price 95420 is 0.25%% above EMA21(95180), rejected 3 candles ago with 300pt wick. Pattern: Last 5 candles show bullish momentum - avg body 180pts, 4/5 green. Entry: 95400 on pullback to EMA21 with tight SL at 94850 (last swing low, 550pts = 0.58%% risk). TP1=96100 (1.27R), TP2=96650 (2.5R). Risk: Clean structure, strong rejection, tight SL = HIGH probability LONG."
+            
+            - No text before or after JSON.
+            - No markdown code blocks.
+            - Only pure JSON.
             """, mode, contextJson);
     }
 
