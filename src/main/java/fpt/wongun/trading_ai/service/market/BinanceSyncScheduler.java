@@ -1,0 +1,115 @@
+package fpt.wongun.trading_ai.service.market;
+
+import fpt.wongun.trading_ai.domain.entity.Candle;
+import fpt.wongun.trading_ai.domain.entity.Symbol;
+import fpt.wongun.trading_ai.repository.CandleRepository;
+import fpt.wongun.trading_ai.repository.SymbolRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Instant;
+import java.util.List;
+
+/**
+ * Scheduled service to automatically sync latest candles from Binance API.
+ * Runs every 5 minutes to keep crypto data up-to-date.
+ */
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class BinanceSyncScheduler {
+
+    private final BinanceClient binanceClient;
+    private final SymbolRepository symbolRepository;
+    private final CandleRepository candleRepository;
+
+    /**
+     * Sync latest candles for all crypto symbols.
+     * Runs every 5 minutes (300,000 ms).
+     * 
+     * Fetches only the latest 20 candles to minimize API calls.
+     */
+    @Scheduled(fixedRate = 300000)  // 5 minutes
+    @Transactional
+    public void syncLatestCandles() {
+        log.info("Starting scheduled Binance candle sync...");
+
+        // Find all crypto symbols (BTCUSDT, ETHUSDT, etc.)
+        List<Symbol> cryptoSymbols = symbolRepository.findAll().stream()
+                .filter(s -> s.getType() != null && s.getType().equals("CRYPTO"))
+                .toList();
+
+        if (cryptoSymbols.isEmpty()) {
+            log.info("No crypto symbols found. Skipping sync.");
+            return;
+        }
+
+        int totalSynced = 0;
+
+        for (Symbol symbol : cryptoSymbols) {
+            try {
+                // Get the most recent candle to determine which timeframes exist
+                List<Candle> existingCandles = candleRepository.findTop1BySymbolOrderByTimestampDesc(symbol);
+                
+                if (existingCandles.isEmpty()) {
+                    log.warn("No existing candles for {}. Skipping sync.", symbol.getCode());
+                    continue;
+                }
+
+                String timeframe = existingCandles.get(0).getTimeframe();
+                String interval = BinanceClient.mapTimeframeToInterval(timeframe);
+
+                // Fetch latest 20 candles (enough to update without excessive API calls)
+                List<BinanceKline> klines = binanceClient.fetchKlines(symbol.getCode(), interval, 20);
+
+                if (klines.isEmpty()) {
+                    log.warn("No data from Binance for {}/{}. Skipping.", symbol.getCode(), timeframe);
+                    continue;
+                }
+
+                // Convert to Candle entities
+                List<Candle> newCandles = klines.stream()
+                        .map(kline -> Candle.builder()
+                                .symbol(symbol)
+                                .timeframe(timeframe)
+                                .timestamp(Instant.ofEpochMilli(kline.getOpenTime()))
+                                .open(kline.getOpen())
+                                .high(kline.getHigh())
+                                .low(kline.getLow())
+                                .close(kline.getClose())
+                                .volume(kline.getVolume())
+                                .build())
+                        .toList();
+
+                // Delete old candles for this symbol/timeframe (keep DB clean)
+                long deleted = candleRepository.deleteBySymbolAndTimeframe(symbol, timeframe);
+
+                // Save new candles
+                candleRepository.saveAll(newCandles);
+
+                totalSynced += newCandles.size();
+                log.info("Synced {} candles for {}/{} (deleted {} old candles)", 
+                        newCandles.size(), symbol.getCode(), timeframe, deleted);
+
+            } catch (Exception e) {
+                log.error("Failed to sync candles for {}: {}", symbol.getCode(), e.getMessage());
+            }
+        }
+
+        log.info("Binance sync completed. Total candles synced: {}", totalSynced);
+    }
+
+    /**
+     * Initial sync on application startup.
+     * Delays 30 seconds to allow app to fully initialize.
+     */
+    @Scheduled(initialDelay = 30000, fixedDelay = Long.MAX_VALUE)  // Run once 30s after startup
+    @Transactional
+    public void initialSync() {
+        log.info("Running initial Binance candle sync...");
+        syncLatestCandles();
+    }
+}

@@ -7,6 +7,7 @@ import fpt.wongun.trading_ai.domain.enums.Direction;
 import fpt.wongun.trading_ai.service.analysis.TradeAnalysisContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -24,11 +25,12 @@ import java.util.Map;
  * Uses GPT models to analyze market data and provide Bob Volman-style
  * price action trading recommendations.
  * 
- * @Primary annotation makes this the default AiClient implementation,
- * overriding MockAiClient for production use.
+ * Only active when groq.enabled=false (fallback to OpenAI).
+ * @Primary when active to override MockAiClient.
  */
 @Component
 @Primary
+@ConditionalOnProperty(prefix = "groq", name = "enabled", havingValue = "false", matchIfMissing = false)
 @RequiredArgsConstructor
 @Slf4j
 public class OpenAiClient implements AiClient {

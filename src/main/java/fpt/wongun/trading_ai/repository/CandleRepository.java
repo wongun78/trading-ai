@@ -10,6 +10,8 @@ public interface CandleRepository extends JpaRepository<Candle, Long> {
 
     List<Candle> findTop200BySymbolAndTimeframeOrderByTimestampDesc(Symbol symbol, String timeframe);
     
+    List<Candle> findTop1BySymbolOrderByTimestampDesc(Symbol symbol);
+    
     long deleteBySymbolAndTimeframe(Symbol symbol, String timeframe);
     
     long deleteBySymbol(Symbol symbol);

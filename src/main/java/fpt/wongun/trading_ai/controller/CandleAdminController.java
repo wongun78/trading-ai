@@ -6,17 +6,21 @@ import fpt.wongun.trading_ai.domain.enums.SymbolType;
 import fpt.wongun.trading_ai.dto.CandleImportDto;
 import fpt.wongun.trading_ai.repository.CandleRepository;
 import fpt.wongun.trading_ai.repository.SymbolRepository;
+import fpt.wongun.trading_ai.service.market.BinanceClient;
+import fpt.wongun.trading_ai.service.market.BinanceKline;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
 /**
  * Admin controller for managing candle data import and deletion.
+ * Now supports importing real-time data from Binance API.
  */
 @RestController
 @RequestMapping("/api/admin/candles")
@@ -25,6 +29,7 @@ public class CandleAdminController {
 
     private final CandleRepository candleRepository;
     private final SymbolRepository symbolRepository;
+    private final BinanceClient binanceClient;
 
     /**
      * Bulk import candles from JSON array.
@@ -112,6 +117,73 @@ public class CandleAdminController {
         response.put("message", "Deletion completed successfully");
 
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Import real-time candles from Binance API.
+     * 
+     * @param symbol Binance trading pair (e.g., BTCUSDT, ETHUSDT)
+     * @param timeframe Your timeframe (M5, M15, H1) - will be converted to Binance interval
+     * @param limit Number of candles to fetch (max 1000)
+     * 
+     * Example: POST /api/admin/candles/import-binance?symbol=BTCUSDT&timeframe=M5&limit=200
+     */
+    @PostMapping("/import-binance")
+    @Transactional
+    public ResponseEntity<Map<String, Object>> importFromBinance(
+            @RequestParam String symbol,
+            @RequestParam String timeframe,
+            @RequestParam(defaultValue = "200") int limit) {
+
+        try {
+            // Convert timeframe to Binance interval (M5 -> 5m)
+            String interval = BinanceClient.mapTimeframeToInterval(timeframe);
+
+            // Fetch candles from Binance
+            List<BinanceKline> klines = binanceClient.fetchKlines(symbol, interval, limit);
+
+            if (klines.isEmpty()) {
+                return ResponseEntity.badRequest()
+                        .body(Map.of("error", "No data returned from Binance for " + symbol));
+            }
+
+            // Get or create symbol
+            Symbol symbolEntity = symbolRepository.findByCode(symbol)
+                    .orElseGet(() -> createSymbol(symbol));
+
+            // Convert BinanceKline to Candle entities
+            List<Candle> candles = klines.stream()
+                    .map(kline -> Candle.builder()
+                            .symbol(symbolEntity)
+                            .timeframe(timeframe)
+                            .timestamp(Instant.ofEpochMilli(kline.getOpenTime()))
+                            .open(kline.getOpen())
+                            .high(kline.getHigh())
+                            .low(kline.getLow())
+                            .close(kline.getClose())
+                            .volume(kline.getVolume())
+                            .build())
+                    .toList();
+
+            // Delete old candles for this symbol/timeframe
+            candleRepository.deleteBySymbolAndTimeframe(symbolEntity, timeframe);
+
+            // Save new candles
+            candleRepository.saveAll(candles);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("symbol", symbol);
+            response.put("timeframe", timeframe);
+            response.put("importedCount", candles.size());
+            response.put("source", "Binance API");
+            response.put("message", "Successfully imported real-time data from Binance");
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Failed to import from Binance: " + e.getMessage()));
+        }
     }
 
     /**
