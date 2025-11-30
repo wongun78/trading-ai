@@ -364,8 +364,9 @@ public class GroqAiClient implements AiClient {
     }
 
     /**
-     * Call Groq Chat Completions API.
+     * Call Groq Chat Completions API with retry logic.
      * Groq API is OpenAI-compatible, so we use the same endpoint structure.
+     * Implements exponential backoff for rate limiting (429) and transient errors.
      */
     private String callGroqApi(String userPrompt) {
         Map<String, Object> requestBody = new HashMap<>();
@@ -379,34 +380,82 @@ public class GroqAiClient implements AiClient {
         );
         requestBody.put("messages", messages);
 
-        // Call API
-        Mono<Map> responseMono = getGroqWebClient().post()
-                .uri("/chat/completions")
-                .bodyValue(requestBody)
-                .retrieve()
-                .bodyToMono(Map.class);
+        // Retry configuration
+        int maxRetries = 3;
+        int retryDelayMs = 1000; // Start with 1 second
+        
+        for (int attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                log.debug("Groq API call attempt {}/{}", attempt, maxRetries);
+                
+                // Call API
+                Mono<Map> responseMono = getGroqWebClient().post()
+                        .uri("/chat/completions")
+                        .bodyValue(requestBody)
+                        .retrieve()
+                        .bodyToMono(Map.class);
 
-        Map<String, Object> response = responseMono.block();
+                Map<String, Object> response = responseMono.block();
 
-        if (response == null || !response.containsKey("choices")) {
-            throw new RuntimeException("Invalid response from Groq API");
+                if (response == null || !response.containsKey("choices")) {
+                    throw new RuntimeException("Invalid response from Groq API");
+                }
+
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> choices = (List<Map<String, Object>>) response.get("choices");
+
+                if (choices.isEmpty()) {
+                    throw new RuntimeException("No choices in Groq response");
+                }
+
+                @SuppressWarnings("unchecked")
+                Map<String, Object> message = (Map<String, Object>) choices.get(0).get("message");
+
+                String content = (String) message.get("content");
+
+                log.info("Groq API call successful on attempt {}", attempt);
+                log.debug("Groq response: {}", content);
+
+                return content.trim();
+                
+            } catch (Exception e) {
+                String errorMsg = e.getMessage();
+                boolean isRateLimitError = errorMsg != null && (
+                    errorMsg.contains("429") || 
+                    errorMsg.contains("Too Many Requests") ||
+                    errorMsg.contains("rate limit")
+                );
+                
+                boolean isTransientError = errorMsg != null && (
+                    errorMsg.contains("503") ||
+                    errorMsg.contains("502") ||
+                    errorMsg.contains("timeout")
+                );
+                
+                // Retry on rate limit or transient errors
+                if ((isRateLimitError || isTransientError) && attempt < maxRetries) {
+                    log.warn("Groq API error (attempt {}/{}): {}. Retrying in {}ms...", 
+                            attempt, maxRetries, errorMsg, retryDelayMs);
+                    
+                    try {
+                        Thread.sleep(retryDelayMs);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        throw new RuntimeException("Retry interrupted", ie);
+                    }
+                    
+                    // Exponential backoff: 1s, 2s, 4s
+                    retryDelayMs *= 2;
+                    continue;
+                }
+                
+                // Final attempt failed or non-retryable error
+                log.error("Groq API call failed after {} attempts: {}", attempt, errorMsg);
+                throw new RuntimeException("Groq API unavailable: " + errorMsg, e);
+            }
         }
-
-        @SuppressWarnings("unchecked")
-        List<Map<String, Object>> choices = (List<Map<String, Object>>) response.get("choices");
-
-        if (choices.isEmpty()) {
-            throw new RuntimeException("No choices in Groq response");
-        }
-
-        @SuppressWarnings("unchecked")
-        Map<String, Object> message = (Map<String, Object>) choices.get(0).get("message");
-
-        String content = (String) message.get("content");
-
-        log.debug("Groq response: {}", content);
-
-        return content.trim();
+        
+        throw new RuntimeException("Groq API failed after " + maxRetries + " retries");
     }
 
     /**
@@ -457,11 +506,28 @@ public class GroqAiClient implements AiClient {
 
     /**
      * Create a fallback NEUTRAL suggestion when API call fails.
+     * Provides user-friendly error messages.
      */
     private TradeSuggestion createFallbackSuggestion(String errorMessage) {
+        String userFriendlyMessage;
+        
+        if (errorMessage.contains("429") || errorMessage.contains("Too Many Requests") || errorMessage.contains("rate limit")) {
+            userFriendlyMessage = "⏱️ Groq API rate limit reached. Too many requests in short time. Please wait 30-60 seconds and try again.";
+        } else if (errorMessage.contains("401") || errorMessage.contains("Unauthorized")) {
+            userFriendlyMessage = "🔑 Groq API key invalid or missing. Please check GROQ_API_KEY in .env file.";
+        } else if (errorMessage.contains("503") || errorMessage.contains("502")) {
+            userFriendlyMessage = "🔧 Groq service temporarily unavailable. Their servers may be under maintenance. Try again in a few minutes.";
+        } else if (errorMessage.contains("timeout")) {
+            userFriendlyMessage = "⏰ Request timeout. Groq API took too long to respond. Try again.";
+        } else if (errorMessage.contains("network") || errorMessage.contains("connection")) {
+            userFriendlyMessage = "🌐 Network connection error. Check your internet connection and try again.";
+        } else {
+            userFriendlyMessage = "❌ AI analysis unavailable: " + errorMessage;
+        }
+        
         return TradeSuggestion.builder()
                 .direction(Direction.NEUTRAL)
-                .reasoning("Groq AI service unavailable: " + errorMessage)
+                .reasoning(userFriendlyMessage)
                 .build();
     }
 
