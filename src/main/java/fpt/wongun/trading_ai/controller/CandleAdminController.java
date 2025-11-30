@@ -32,6 +32,34 @@ public class CandleAdminController {
     private final BinanceClient binanceClient;
 
     /**
+     * Get candles for a specific symbol and timeframe.
+     * 
+     * @param symbolCode Symbol code (e.g., BTCUSDT, XAUUSD)
+     * @param timeframe Timeframe (M5, M15, H1, etc.)
+     * @param limit Maximum number of candles to return (default 200)
+     * @return List of candles ordered by timestamp descending
+     */
+    @GetMapping
+    public ResponseEntity<List<Candle>> getCandles(
+            @RequestParam String symbolCode,
+            @RequestParam String timeframe,
+            @RequestParam(defaultValue = "200") int limit) {
+        
+        Symbol symbol = symbolRepository.findByCode(symbolCode)
+                .orElseThrow(() -> new RuntimeException("Symbol not found: " + symbolCode));
+        
+        // Use existing method or create custom query
+        List<Candle> candles = candleRepository.findTop200BySymbolAndTimeframeOrderByTimestampDesc(symbol, timeframe);
+        
+        // Limit results if needed
+        if (limit < candles.size()) {
+            candles = candles.subList(0, limit);
+        }
+        
+        return ResponseEntity.ok(candles);
+    }
+
+    /**
      * Bulk import candles from JSON array.
      */
     @PostMapping("/bulk-import")
