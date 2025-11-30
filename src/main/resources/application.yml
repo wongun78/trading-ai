@@ -1,0 +1,34 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/trading_ai
+    username: trading_ai_user
+    password: 123456
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+    defer-datasource-initialization: true
+
+  sql:
+    init:
+      mode: always
+
+server:
+  port: 8080
+
+# OpenAI Configuration
+openai:
+  api-key: ${OPENAI_API_KEY:changeme}
+  base-url: https://api.openai.com/v1
+  model: gpt-4o-mini
+  temperature: 0.3
+
+logging:
+  level:
+    root: INFO
+    org.hibernate.SQL: DEBUG
