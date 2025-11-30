@@ -13,7 +13,6 @@ import java.time.Instant;
 @RestController
 @RequestMapping("/api/signals")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class AiSignalController {
 
     private final AiSignalService aiSignalService;

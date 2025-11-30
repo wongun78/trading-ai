@@ -21,7 +21,6 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/admin/candles")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class CandleAdminController {
 
     private final CandleRepository candleRepository;

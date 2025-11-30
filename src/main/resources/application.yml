@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/trading_ai
-    username: trading_ai_user
-    password: 123456
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/trading_ai}
+    username: ${DB_USERNAME:trading_ai_user}
+    password: ${DB_PASSWORD:changeme}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -19,14 +19,18 @@ spring:
       mode: always
 
 server:
-  port: 8080
+  port: ${SERVER_PORT:8080}
 
 # OpenAI Configuration
 openai:
   api-key: ${OPENAI_API_KEY:changeme}
-  base-url: https://api.openai.com/v1
-  model: gpt-4o-mini
-  temperature: 0.3
+  base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
+  model: ${OPENAI_MODEL:gpt-4o-mini}
+  temperature: ${OPENAI_TEMPERATURE:0.3}
+
+# CORS Configuration
+cors:
+  allowed-origins: ${ALLOWED_ORIGINS:http://localhost:5173}
 
 logging:
   level:
