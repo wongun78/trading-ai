@@ -21,16 +21,22 @@ spring:
 server:
   port: ${SERVER_PORT:8080}
 
-# OpenAI Configuration
+# Groq AI Configuration (FREE - Recommended)
+# Get your free API key at https://console.groq.com
+groq:
+  enabled: ${GROQ_ENABLED:true}
+  api-key: ${GROQ_API_KEY:changeme}
+  base-url: ${GROQ_BASE_URL:https://api.groq.com/openai/v1}
+  model: ${GROQ_MODEL:llama-3.3-70b-versatile}
+  temperature: ${GROQ_TEMPERATURE:0.3}
+
+# OpenAI Configuration (PAID - Fallback when Groq is disabled)
+# Only used if groq.enabled=false
 openai:
   api-key: ${OPENAI_API_KEY:changeme}
   base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
   model: ${OPENAI_MODEL:gpt-4o-mini}
   temperature: ${OPENAI_TEMPERATURE:0.3}
-
-# CORS Configuration
-cors:
-  allowed-origins: ${ALLOWED_ORIGINS:http://localhost:5173}
 
 logging:
   level:
