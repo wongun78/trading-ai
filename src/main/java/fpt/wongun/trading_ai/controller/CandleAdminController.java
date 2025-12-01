@@ -3,16 +3,22 @@ package fpt.wongun.trading_ai.controller;
 import fpt.wongun.trading_ai.domain.entity.Candle;
 import fpt.wongun.trading_ai.domain.entity.Symbol;
 import fpt.wongun.trading_ai.domain.enums.SymbolType;
+import fpt.wongun.trading_ai.dto.ApiResponse;
 import fpt.wongun.trading_ai.dto.CandleImportDto;
 import fpt.wongun.trading_ai.dto.CandleResponseDto;
+import fpt.wongun.trading_ai.exception.SymbolNotFoundException;
 import fpt.wongun.trading_ai.repository.CandleRepository;
 import fpt.wongun.trading_ai.repository.SymbolRepository;
 import fpt.wongun.trading_ai.service.market.BinanceClient;
 import fpt.wongun.trading_ai.service.market.BinanceKline;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
@@ -20,11 +26,13 @@ import java.util.*;
 
 /**
  * Admin controller for managing candle data import and deletion.
- * Now supports importing real-time data from Binance API.
+ * Supports importing real-time data from Binance API.
  */
 @RestController
 @RequestMapping("/api/admin/candles")
 @RequiredArgsConstructor
+@Slf4j
+@Validated
 public class CandleAdminController {
 
     private final CandleRepository candleRepository;
@@ -34,29 +42,27 @@ public class CandleAdminController {
     /**
      * Get candles for a specific symbol and timeframe.
      * 
-     * @param symbolCode Symbol code (e.g., BTCUSDT, XAUUSD)
-     * @param timeframe Timeframe (M5, M15, H1, etc.)
-     * @param limit Maximum number of candles to return (default 200)
-     * @return List of candles ordered by timestamp descending
+     * GET /api/admin/candles?symbolCode=BTCUSDT&timeframe=M5&limit=100
      */
     @GetMapping
-    public ResponseEntity<List<CandleResponseDto>> getCandles(
+    public ResponseEntity<ApiResponse<List<CandleResponseDto>>> getCandles(
             @RequestParam String symbolCode,
             @RequestParam String timeframe,
-            @RequestParam(defaultValue = "200") int limit) {
+            @RequestParam(defaultValue = "200") @Min(1) @Max(1000) int limit) {
+        
+        log.debug("Fetching {} candles for {}/{}", limit, symbolCode, timeframe);
         
         Symbol symbol = symbolRepository.findByCode(symbolCode)
-                .orElseThrow(() -> new RuntimeException("Symbol not found: " + symbolCode));
+                .orElseThrow(() -> new SymbolNotFoundException(symbolCode));
         
-        // Use existing method or create custom query
-        List<Candle> candles = candleRepository.findTop200BySymbolAndTimeframeOrderByTimestampDesc(symbol, timeframe);
+        List<Candle> candles = candleRepository
+                .findTop200BySymbolAndTimeframeOrderByTimestampDesc(symbol, timeframe);
         
-        // Limit results if needed
+        // Limit results
         if (limit < candles.size()) {
             candles = candles.subList(0, limit);
         }
         
-        // Map to DTO
         List<CandleResponseDto> response = candles.stream()
                 .map(c -> CandleResponseDto.builder()
                         .time(c.getTimestamp())
@@ -67,25 +73,27 @@ public class CandleAdminController {
                         .build())
                 .collect(java.util.stream.Collectors.toList());
         
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     /**
      * Bulk import candles from JSON array.
+     * 
+     * POST /api/admin/candles/bulk-import
      */
     @PostMapping("/bulk-import")
     @Transactional
-    public ResponseEntity<Map<String, Object>> bulkImport(@Valid @RequestBody List<CandleImportDto> candleDtos) {
+    public ResponseEntity<ApiResponse<Map<String, Object>>> bulkImport(
+            @Valid @RequestBody List<CandleImportDto> candleDtos) {
+        
+        log.info("Bulk importing {} candles", candleDtos.size());
         
         Set<String> uniqueSymbols = new HashSet<>();
         Set<String> timeframes = new HashSet<>();
         List<Candle> candles = new ArrayList<>();
-
-        // Cache symbols to avoid repeated database lookups
         Map<String, Symbol> symbolCache = new HashMap<>();
 
         for (CandleImportDto dto : candleDtos) {
-            // Get or create symbol
             Symbol symbol = symbolCache.computeIfAbsent(dto.getSymbolCode(), code -> {
                 return symbolRepository.findByCode(code)
                         .orElseGet(() -> createSymbol(code));
@@ -94,7 +102,6 @@ public class CandleAdminController {
             uniqueSymbols.add(dto.getSymbolCode());
             timeframes.add(dto.getTimeframe());
 
-            // Map DTO to Candle entity
             Candle candle = Candle.builder()
                     .symbol(symbol)
                     .timeframe(dto.getTimeframe())
@@ -109,88 +116,86 @@ public class CandleAdminController {
             candles.add(candle);
         }
 
-        // Batch save all candles
         candleRepository.saveAll(candles);
 
-        // Build response summary
-        Map<String, Object> response = new HashMap<>();
-        response.put("importedCount", candles.size());
-        response.put("uniqueSymbols", uniqueSymbols.size());
-        response.put("timeframes", new ArrayList<>(timeframes));
-        response.put("message", "Bulk import completed successfully");
+        Map<String, Object> result = new HashMap<>();
+        result.put("importedCount", candles.size());
+        result.put("uniqueSymbols", uniqueSymbols.size());
+        result.put("timeframes", new ArrayList<>(timeframes));
+        result.put("message", "Bulk import completed successfully");
 
-        return ResponseEntity.ok(response);
+        log.info("Bulk import completed: {} candles", candles.size());
+
+        return ResponseEntity.ok(ApiResponse.success(result));
     }
 
     /**
      * Delete candles by symbol and/or timeframe.
+     * 
+     * DELETE /api/admin/candles?symbolCode=BTCUSDT&timeframe=M5
      */
     @DeleteMapping
     @Transactional
-    public ResponseEntity<Map<String, Object>> deleteCandles(
+    public ResponseEntity<ApiResponse<Map<String, Object>>> deleteCandles(
             @RequestParam(required = false) String symbolCode,
             @RequestParam(required = false) String timeframe) {
+
+        log.warn("Deleting candles: symbolCode={}, timeframe={}", symbolCode, timeframe);
 
         long deletedCount;
 
         if (symbolCode != null && timeframe != null) {
-            // Delete by symbol and timeframe
             Symbol symbol = symbolRepository.findByCode(symbolCode)
-                    .orElseThrow(() -> new RuntimeException("Symbol not found: " + symbolCode));
+                    .orElseThrow(() -> new SymbolNotFoundException(symbolCode));
             deletedCount = candleRepository.deleteBySymbolAndTimeframe(symbol, timeframe);
 
         } else if (symbolCode != null) {
-            // Delete by symbol only
             Symbol symbol = symbolRepository.findByCode(symbolCode)
-                    .orElseThrow(() -> new RuntimeException("Symbol not found: " + symbolCode));
+                    .orElseThrow(() -> new SymbolNotFoundException(symbolCode));
             deletedCount = candleRepository.deleteBySymbol(symbol);
 
         } else {
-            // Reject if no parameters provided
             return ResponseEntity.badRequest()
-                    .body(Map.of("error", "At least symbolCode must be provided"));
+                    .body(ApiResponse.error("INVALID_REQUEST", 
+                          "Must provide at least symbolCode parameter"));
         }
 
-        Map<String, Object> response = new HashMap<>();
-        response.put("deletedCount", deletedCount);
-        response.put("message", "Deletion completed successfully");
+        Map<String, Object> result = new HashMap<>();
+        result.put("deletedCount", deletedCount);
+        result.put("message", "Candles deleted successfully");
 
-        return ResponseEntity.ok(response);
+        log.info("Deleted {} candles", deletedCount);
+
+        return ResponseEntity.ok(ApiResponse.success(result));
     }
 
     /**
      * Import real-time candles from Binance API.
      * 
-     * @param symbol Binance trading pair (e.g., BTCUSDT, ETHUSDT)
-     * @param timeframe Your timeframe (M5, M15, H1) - will be converted to Binance interval
-     * @param limit Number of candles to fetch (max 1000)
-     * 
-     * Example: POST /api/admin/candles/import-binance?symbol=BTCUSDT&timeframe=M5&limit=200
+     * POST /api/admin/candles/import-binance?symbol=BTCUSDT&timeframe=M5&limit=200
      */
     @PostMapping("/import-binance")
     @Transactional
-    public ResponseEntity<Map<String, Object>> importFromBinance(
+    public ResponseEntity<ApiResponse<Map<String, Object>>> importFromBinance(
             @RequestParam String symbol,
             @RequestParam String timeframe,
-            @RequestParam(defaultValue = "200") int limit) {
+            @RequestParam(defaultValue = "200") @Min(1) @Max(1000) int limit) {
+
+        log.info("Importing {} candles from Binance: {}/{}", limit, symbol, timeframe);
 
         try {
-            // Convert timeframe to Binance interval (M5 -> 5m)
             String interval = BinanceClient.mapTimeframeToInterval(timeframe);
-
-            // Fetch candles from Binance
             List<BinanceKline> klines = binanceClient.fetchKlines(symbol, interval, limit);
 
             if (klines.isEmpty()) {
                 return ResponseEntity.badRequest()
-                        .body(Map.of("error", "No data returned from Binance for " + symbol));
+                        .body(ApiResponse.error("NO_DATA", 
+                              "No data returned from Binance for " + symbol));
             }
 
-            // Get or create symbol
             Symbol symbolEntity = symbolRepository.findByCode(symbol)
                     .orElseGet(() -> createSymbol(symbol));
 
-            // Convert BinanceKline to Candle entities
             List<Candle> candles = klines.stream()
                     .map(kline -> Candle.builder()
                             .symbol(symbolEntity)
@@ -204,24 +209,25 @@ public class CandleAdminController {
                             .build())
                     .toList();
 
-            // Delete old candles for this symbol/timeframe
             candleRepository.deleteBySymbolAndTimeframe(symbolEntity, timeframe);
-
-            // Save new candles
             candleRepository.saveAll(candles);
 
-            Map<String, Object> response = new HashMap<>();
-            response.put("symbol", symbol);
-            response.put("timeframe", timeframe);
-            response.put("importedCount", candles.size());
-            response.put("source", "Binance API");
-            response.put("message", "Successfully imported real-time data from Binance");
+            Map<String, Object> result = new HashMap<>();
+            result.put("symbol", symbol);
+            result.put("timeframe", timeframe);
+            result.put("importedCount", candles.size());
+            result.put("source", "Binance API");
+            result.put("message", "Successfully imported real-time data from Binance");
 
-            return ResponseEntity.ok(response);
+            log.info("Imported {} candles from Binance", candles.size());
+
+            return ResponseEntity.ok(ApiResponse.success(result));
 
         } catch (Exception e) {
+            log.error("Failed to import from Binance: {}", e.getMessage());
             return ResponseEntity.badRequest()
-                    .body(Map.of("error", "Failed to import from Binance: " + e.getMessage()));
+                    .body(ApiResponse.error("BINANCE_IMPORT_ERROR", 
+                          "Failed to import from Binance: " + e.getMessage()));
         }
     }
 

@@ -1,23 +1,49 @@
 package fpt.wongun.trading_ai.dto;
 
-import jakarta.validation.constraints.DecimalMin;
+import fpt.wongun.trading_ai.domain.enums.TradingMode;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
-import java.math.BigDecimal;
-
+/**
+ * Request DTO for AI signal generation.
+ * Contains parameters needed to analyze market and generate trading signals.
+ */
 @Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class AiSuggestRequestDto {
 
-    @NotBlank
+    @NotBlank(message = "Symbol code is required")
     private String symbolCode;
 
-    @NotBlank
-    private String timeframe; // e.g. M5
+    @NotBlank(message = "Timeframe is required (e.g., M5, M15, H1)")
+    private String timeframe; // e.g. M5, M15, H1
 
-    @NotBlank
-    private String mode; // SCALPING, INTRADAY...
+    @NotNull(message = "Trading mode is required (SCALPING, INTRADAY, or SWING)")
+    private TradingMode mode;
 
-    @DecimalMin("0.0")
-    private BigDecimal maxRiskPerTrade; // percent or R, up to you
+    /**
+     * Number of candles to analyze.
+     * If not provided, uses mode's default candle count.
+     */
+    @Min(value = 20, message = "Minimum 20 candles required for analysis")
+    @Max(value = 500, message = "Maximum 500 candles allowed")
+    private Integer candleCount;
+
+    /**
+     * Get candle count based on mode if not explicitly set
+     */
+    public int getEffectiveCandleCount() {
+        if (candleCount != null) {
+            return candleCount;
+        }
+        return mode != null ? mode.getCandleCount() : TradingMode.SCALPING.getCandleCount();
+    }
 }

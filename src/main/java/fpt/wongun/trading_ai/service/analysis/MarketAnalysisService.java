@@ -8,9 +8,11 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -67,22 +69,39 @@ public class MarketAnalysisService {
     }
 
     private List<BigDecimal> computeEma(List<BigDecimal> closes, int period) {
-        if (closes.isEmpty()) {
+        if (closes.isEmpty() || closes.size() < period) {
             return Collections.emptyList();
         }
+        
         BigDecimal k = BigDecimal.valueOf(2.0 / (period + 1.0));
-        BigDecimal emaPrev = closes.get(0);
         BigDecimal[] emaArr = new BigDecimal[closes.size()];
-        emaArr[0] = emaPrev;
+        
+        // First EMA value = SMA of first 'period' values
+        BigDecimal sum = BigDecimal.ZERO;
+        for (int i = 0; i < period; i++) {
+            sum = sum.add(closes.get(i));
+        }
+        BigDecimal emaPrev = sum.divide(BigDecimal.valueOf(period), 6, RoundingMode.HALF_UP);
+        
+        // Fill array starting from period-1 index
+        for (int i = 0; i < period - 1; i++) {
+            emaArr[i] = null; // No EMA for first (period-1) candles
+        }
+        emaArr[period - 1] = emaPrev;
 
-        for (int i = 1; i < closes.size(); i++) {
+        // Calculate EMA for remaining candles
+        for (int i = period; i < closes.size(); i++) {
             BigDecimal price = closes.get(i);
             emaPrev = price.multiply(k)
                     .add(emaPrev.multiply(BigDecimal.ONE.subtract(k)))
                     .setScale(6, RoundingMode.HALF_UP);
             emaArr[i] = emaPrev;
         }
-        return List.of(emaArr);
+        
+        // Convert to list, filtering out nulls
+        return Arrays.stream(emaArr)
+                .filter(Objects::nonNull)
+                .toList();
     }
 
     private String inferTrend(List<BigDecimal> closes) {

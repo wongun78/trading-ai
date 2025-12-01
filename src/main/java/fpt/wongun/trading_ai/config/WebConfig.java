@@ -8,22 +8,31 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
  * Web configuration for CORS (Cross-Origin Resource Sharing).
- * This restricts API access to specific frontend origins for security.
+ * Restricts API access to specific frontend origins for security.
+ * 
+ * PRODUCTION NOTE: Configure ALLOWED_ORIGINS environment variable with your production domain.
+ * Example: ALLOWED_ORIGINS=https://myapp.com,https://www.myapp.com
  */
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
 
-    @Value("${ALLOWED_ORIGINS:http://localhost:5173}")
+    @Value("${cors.allowed-origins:http://localhost:5173}")
     private String allowedOrigins;
+
+    @Value("${cors.max-age:3600}")
+    private long maxAge;
 
     @Override
     public void addCorsMappings(@NonNull CorsRegistry registry) {
         String[] origins = allowedOrigins.split(",");
+        
         registry.addMapping("/api/**")
                 .allowedOrigins(origins)
-                .allowedMethods("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
+                // Only allow necessary HTTP methods
+                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
+                // allowCredentials requires specific origins (not *)
                 .allowCredentials(true)
-                .maxAge(3600);
+                .maxAge(maxAge);  // Cache preflight requests
     }
 }

@@ -1,49 +1,78 @@
 package fpt.wongun.trading_ai.domain.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 
+/**
+ * Candlestick data entity.
+ * Stores OHLCV (Open, High, Low, Close, Volume) data for technical analysis.
+ */
 @Entity
 @Table(name = "candles",
+       uniqueConstraints = {
+           @UniqueConstraint(
+               name = "uk_candle_symbol_timeframe_timestamp",
+               columnNames = {"symbol_id", "timeframe", "timestamp"}
+           )
+       },
        indexes = {
            @Index(name = "idx_candle_symbol_tf_time", columnList = "symbol_id,timeframe,timestamp")
        })
+@SQLDelete(sql = "UPDATE candles SET deleted = true, deleted_at = NOW(), deleted_by = 'SYSTEM' WHERE id = ? AND version = ?")
+@SQLRestriction("deleted = false")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Candle {
+public class Candle extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @NotNull(message = "Symbol is required")
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    @JoinColumn(name = "symbol_id")
+    @JoinColumn(name = "symbol_id", nullable = false)
     private Symbol symbol;
 
+    @NotNull(message = "Timeframe is required")
     @Column(nullable = false, length = 10)
-    private String timeframe; // M1, M5, M15...
+    private String timeframe; // M1, M5, M15... (keeping as String for backward compatibility)
 
+    @NotNull(message = "Timestamp is required")
     @Column(nullable = false)
     private Instant timestamp;
 
-    @Column(nullable = false, precision = 18, scale = 6)
+    @NotNull(message = "Open price is required")
+    @DecimalMin(value = "0.0", inclusive = false, message = "Open price must be positive")
+    @Column(nullable = false, precision = 28, scale = 18)
     private BigDecimal open;
 
-    @Column(nullable = false, precision = 18, scale = 6)
+    @NotNull(message = "High price is required")
+    @DecimalMin(value = "0.0", inclusive = false, message = "High price must be positive")
+    @Column(nullable = false, precision = 28, scale = 18)
     private BigDecimal high;
 
-    @Column(nullable = false, precision = 18, scale = 6)
+    @NotNull(message = "Low price is required")
+    @DecimalMin(value = "0.0", inclusive = false, message = "Low price must be positive")
+    @Column(nullable = false, precision = 28, scale = 18)
     private BigDecimal low;
 
-    @Column(nullable = false, precision = 18, scale = 6)
+    @NotNull(message = "Close price is required")
+    @DecimalMin(value = "0.0", inclusive = false, message = "Close price must be positive")
+    @Column(nullable = false, precision = 28, scale = 18)
     private BigDecimal close;
 
-    @Column(nullable = false, precision = 18, scale = 6)
+    @NotNull(message = "Volume is required")
+    @DecimalMin(value = "0.0", message = "Volume cannot be negative")
+    @Column(nullable = false, precision = 28, scale = 18)
     private BigDecimal volume;
 }

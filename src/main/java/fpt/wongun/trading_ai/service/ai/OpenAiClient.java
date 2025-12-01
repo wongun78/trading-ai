@@ -101,23 +101,31 @@ public class OpenAiClient implements AiClient {
         List<BigDecimal> ema21 = context.getEma21();
         List<BigDecimal> ema25 = context.getEma25();
 
-        int size = candles.size();
-        if (size <= candleLimit) {
+        int candleSize = candles.size();
+        if (candleSize <= candleLimit) {
             return context; // Already within limit
         }
 
-        int startIndex = size - candleLimit;
+        int candleStartIndex = candleSize - candleLimit;
+        
+        // Calculate start index for EMAs (they may be shorter than candles)
+        int ema21StartIndex = ema21 != null && ema21.size() > candleLimit 
+                ? ema21.size() - candleLimit 
+                : 0;
+        int ema25StartIndex = ema25 != null && ema25.size() > candleLimit 
+                ? ema25.size() - candleLimit 
+                : 0;
 
         return TradeAnalysisContext.builder()
                 .symbolCode(context.getSymbolCode())
                 .timeframe(context.getTimeframe())
                 .higherTimeframeTrend(context.getHigherTimeframeTrend())
-                .candles(new ArrayList<>(candles.subList(startIndex, size)))
+                .candles(new ArrayList<>(candles.subList(candleStartIndex, candleSize)))
                 .ema21(ema21 != null && ema21.size() > candleLimit 
-                        ? new ArrayList<>(ema21.subList(startIndex, size)) 
+                        ? new ArrayList<>(ema21.subList(ema21StartIndex, ema21.size())) 
                         : ema21)
                 .ema25(ema25 != null && ema25.size() > candleLimit 
-                        ? new ArrayList<>(ema25.subList(startIndex, size)) 
+                        ? new ArrayList<>(ema25.subList(ema25StartIndex, ema25.size())) 
                         : ema25)
                 .build();
     }
@@ -252,6 +260,8 @@ public class OpenAiClient implements AiClient {
                     .replaceAll("```\\s*", "")
                     .trim();
 
+            log.debug("Cleaned JSON for parsing: {}", cleanJson);
+
             @SuppressWarnings("unchecked")
             Map<String, Object> responseMap = objectMapper.readValue(cleanJson, Map.class);
 
@@ -269,8 +279,39 @@ public class OpenAiClient implements AiClient {
                     .build();
 
         } catch (JsonProcessingException e) {
-            log.error("Failed to parse OpenAI response as JSON: {}", responseJson, e);
-            return createFallbackSuggestion("Failed to parse AI response: " + responseJson);
+            log.error("Failed to parse OpenAI response as JSON. Original: {}", responseJson, e);
+            
+            // Try to clean and re-parse one more time with more aggressive cleaning
+            try {
+                String aggressiveClean = responseJson
+                        .replaceAll("(?s)```json\\s*", "")
+                        .replaceAll("(?s)```\\s*", "")
+                        .replaceAll("\\n", " ")
+                        .replaceAll("\\s+", " ")
+                        .trim();
+                
+                @SuppressWarnings("unchecked")
+                Map<String, Object> responseMap = objectMapper.readValue(aggressiveClean, Map.class);
+                
+                log.info("Successfully parsed with aggressive cleaning");
+                
+                return TradeSuggestion.builder()
+                        .direction(Direction.valueOf((String) responseMap.get("direction")))
+                        .entryPrice(parseDecimal(responseMap.get("entryPrice")))
+                        .stopLoss(parseDecimal(responseMap.get("stopLoss")))
+                        .takeProfit1(parseDecimal(responseMap.get("takeProfit1")))
+                        .takeProfit2(parseDecimal(responseMap.get("takeProfit2")))
+                        .takeProfit3(parseDecimal(responseMap.get("takeProfit3")))
+                        .riskReward1(parseDecimal(responseMap.get("riskReward1")))
+                        .riskReward2(parseDecimal(responseMap.get("riskReward2")))
+                        .riskReward3(parseDecimal(responseMap.get("riskReward3")))
+                        .reasoning((String) responseMap.get("reasoning"))
+                        .build();
+                        
+            } catch (Exception ex) {
+                log.error("Aggressive cleaning also failed", ex);
+                return createFallbackSuggestion("⚠️ AI response format error. Please try again.");
+            }
         }
     }
 
