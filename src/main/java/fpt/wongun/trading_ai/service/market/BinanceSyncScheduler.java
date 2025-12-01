@@ -32,8 +32,10 @@ public class BinanceSyncScheduler {
      * Runs every 5 seconds for real-time updates.
      * 
      * Fetches only the latest 20 candles to minimize API calls.
+     * 
+     * TEMPORARILY DISABLED - causing duplicate key constraint violations
      */
-    @Scheduled(fixedRate = 5000)  // 5 seconds
+    // @Scheduled(fixedRate = 5000)  // 5 seconds - DISABLED
     @Transactional
     public void syncLatestCandles() {
         log.info("Starting scheduled Binance candle sync...");
@@ -114,8 +116,10 @@ public class BinanceSyncScheduler {
     /**
      * Initial sync on application startup.
      * Delays 30 seconds to allow app to fully initialize.
+     * 
+     * TEMPORARILY DISABLED - causing duplicate key constraint violations
      */
-    @Scheduled(initialDelay = 30000, fixedDelay = Long.MAX_VALUE)  // Run once 30s after startup
+    // @Scheduled(initialDelay = 30000, fixedDelay = Long.MAX_VALUE)  // DISABLED
     @Transactional
     public void initialSync() {
         log.info("Running initial Binance candle sync...");
