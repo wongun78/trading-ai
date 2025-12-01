@@ -31,11 +31,9 @@ public class BinanceSyncScheduler {
      * Sync latest candles for all crypto symbols.
      * Runs every 5 seconds for real-time updates.
      * 
-     * Fetches only the latest 20 candles to minimize API calls.
-     * 
-     * TEMPORARILY DISABLED - causing duplicate key constraint violations
+     * Fetches 200 candles and replaces old data (delete-then-insert pattern).
      */
-    // @Scheduled(fixedRate = 5000)  // 5 seconds - DISABLED
+    @Scheduled(fixedRate = 5000)  // 5 seconds
     @Transactional
     public void syncLatestCandles() {
         log.info("Starting scheduled Binance candle sync...");
@@ -73,17 +71,8 @@ public class BinanceSyncScheduler {
                     continue;
                 }
 
-                // Get existing candles to avoid duplicates
-                List<Candle> existingCandlesForTimeframe = candleRepository.findBySymbolAndTimeframe(symbol, timeframe);
-                
-                // Create a set of existing timestamps for fast lookup
-                var existingTimestamps = existingCandlesForTimeframe.stream()
-                        .map(Candle::getTimestamp)
-                        .collect(java.util.stream.Collectors.toSet());
-
-                // Convert to Candle entities (only new ones)
+                // Convert to Candle entities
                 List<Candle> newCandles = klines.stream()
-                        .filter(kline -> !existingTimestamps.contains(Instant.ofEpochMilli(kline.getOpenTime())))
                         .map(kline -> Candle.builder()
                                 .symbol(symbol)
                                 .timeframe(timeframe)
@@ -96,14 +85,15 @@ public class BinanceSyncScheduler {
                                 .build())
                         .toList();
 
-                // Save only new candles
-                if (!newCandles.isEmpty()) {
-                    candleRepository.saveAll(newCandles);
-                }
+                // Delete old candles first to avoid duplicates (same as CandleAdminController)
+                long deleted = candleRepository.deleteBySymbolAndTimeframe(symbol, timeframe);
+
+                // Save new candles
+                candleRepository.saveAll(newCandles);
 
                 totalSynced += newCandles.size();
-                log.info("Synced {} new candles for {}/{}", 
-                        newCandles.size(), symbol.getCode(), timeframe);
+                log.info("Synced {} new candles for {}/{} (deleted {} old)", 
+                        newCandles.size(), symbol.getCode(), timeframe, deleted);
 
             } catch (Exception e) {
                 log.error("Failed to sync candles for {}: {}", symbol.getCode(), e.getMessage());
@@ -116,10 +106,8 @@ public class BinanceSyncScheduler {
     /**
      * Initial sync on application startup.
      * Delays 30 seconds to allow app to fully initialize.
-     * 
-     * TEMPORARILY DISABLED - causing duplicate key constraint violations
      */
-    // @Scheduled(initialDelay = 30000, fixedDelay = Long.MAX_VALUE)  // DISABLED
+    @Scheduled(initialDelay = 30000, fixedDelay = Long.MAX_VALUE)  // Run once 30s after startup
     @Transactional
     public void initialSync() {
         log.info("Running initial Binance candle sync...");
