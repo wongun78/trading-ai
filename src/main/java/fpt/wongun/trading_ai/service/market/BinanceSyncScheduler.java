@@ -71,8 +71,17 @@ public class BinanceSyncScheduler {
                     continue;
                 }
 
-                // Convert to Candle entities
+                // Get existing candles to avoid duplicates
+                List<Candle> existingCandlesForTimeframe = candleRepository.findBySymbolAndTimeframe(symbol, timeframe);
+                
+                // Create a set of existing timestamps for fast lookup
+                var existingTimestamps = existingCandlesForTimeframe.stream()
+                        .map(Candle::getTimestamp)
+                        .collect(java.util.stream.Collectors.toSet());
+
+                // Convert to Candle entities (only new ones)
                 List<Candle> newCandles = klines.stream()
+                        .filter(kline -> !existingTimestamps.contains(Instant.ofEpochMilli(kline.getOpenTime())))
                         .map(kline -> Candle.builder()
                                 .symbol(symbol)
                                 .timeframe(timeframe)
@@ -85,15 +94,14 @@ public class BinanceSyncScheduler {
                                 .build())
                         .toList();
 
-                // Delete old candles for this symbol/timeframe (keep DB clean)
-                long deleted = candleRepository.deleteBySymbolAndTimeframe(symbol, timeframe);
-
-                // Save new candles
-                candleRepository.saveAll(newCandles);
+                // Save only new candles
+                if (!newCandles.isEmpty()) {
+                    candleRepository.saveAll(newCandles);
+                }
 
                 totalSynced += newCandles.size();
-                log.info("Synced {} candles for {}/{} (deleted {} old candles)", 
-                        newCandles.size(), symbol.getCode(), timeframe, deleted);
+                log.info("Synced {} new candles for {}/{}", 
+                        newCandles.size(), symbol.getCode(), timeframe);
 
             } catch (Exception e) {
                 log.error("Failed to sync candles for {}: {}", symbol.getCode(), e.getMessage());
