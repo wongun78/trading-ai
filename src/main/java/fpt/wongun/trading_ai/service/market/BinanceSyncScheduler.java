@@ -85,14 +85,15 @@ public class BinanceSyncScheduler {
                                 .build())
                         .toList();
 
-                // Delete old candles first to avoid duplicates (same as CandleAdminController)
-                long deleted = candleRepository.deleteBySymbolAndTimeframe(symbol, timeframe);
+                // Delete old candles first using HARD DELETE to avoid unique constraint violations
+                // (soft delete would leave rows with deleted=true, causing duplicates on re-insert)
+                int deleted = candleRepository.hardDeleteBySymbolAndTimeframe(symbol, timeframe);
 
                 // Save new candles
                 candleRepository.saveAll(newCandles);
 
                 totalSynced += newCandles.size();
-                log.info("Synced {} new candles for {}/{} (deleted {} old)", 
+                log.info("Synced {} new candles for {}/{} (hard-deleted {} old)", 
                         newCandles.size(), symbol.getCode(), timeframe, deleted);
 
             } catch (Exception e) {
