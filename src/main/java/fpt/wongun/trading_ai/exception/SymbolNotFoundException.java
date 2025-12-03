@@ -9,7 +9,7 @@ public class SymbolNotFoundException extends TradingException {
     
     public SymbolNotFoundException(String symbolCode) {
         super(
-            String.format("Symbol '%s' not found. Please check the symbol code.", symbolCode),
+                "Symbol '%s' not found. Please check the symbol code.".formatted(symbolCode),
             "SYMBOL_NOT_FOUND",
             HttpStatus.NOT_FOUND
         );

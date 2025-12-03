@@ -193,7 +193,7 @@ public class GroqAiClient implements AiClient {
      * Build the user prompt with trading mode instructions and market context.
      */
     private String buildUserPrompt(String mode, String contextJson) {
-        return String.format("""
+        return """
             MODE: %s
             
             Market data (recent candles trimmed based on mode):
@@ -368,7 +368,7 @@ public class GroqAiClient implements AiClient {
             - NO text before or after JSON
             - NO markdown code blocks
             - ONLY pure JSON
-            """, mode, contextJson);
+            """.formatted(mode, contextJson);
     }
 
     /**
@@ -417,7 +417,7 @@ public class GroqAiClient implements AiClient {
                 }
 
                 @SuppressWarnings("unchecked")
-                Map<String, Object> message = (Map<String, Object>) choices.get(0).get("message");
+                Map<String, Object> message = (Map<String, Object>) choices.getFirst().get("message");
 
                 String content = (String) message.get("content");
 

@@ -134,7 +134,7 @@ public class OpenAiClient implements AiClient {
      * Build the user prompt with trading mode instructions and market context.
      */
     private String buildUserPrompt(String mode, String contextJson) {
-        return String.format("""
+        return """
             MODE: %s
             
             Here is the market context as JSON (trimmed to recent candles):
@@ -192,7 +192,7 @@ public class OpenAiClient implements AiClient {
             - No comments.
             - No markdown.
             - Only JSON.
-            """, mode, contextJson);
+            """.formatted(mode, contextJson);
     }
 
     /**
@@ -237,7 +237,7 @@ public class OpenAiClient implements AiClient {
         }
 
         @SuppressWarnings("unchecked")
-        Map<String, Object> message = (Map<String, Object>) choices.get(0).get("message");
+        Map<String, Object> message = (Map<String, Object>) choices.getFirst().get("message");
         
         String content = (String) message.get("content");
         

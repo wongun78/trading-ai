@@ -108,7 +108,7 @@ public class MarketAnalysisService {
         if (closes.size() < 5) {
             return "UNKNOWN";
         }
-        BigDecimal last = closes.get(closes.size() - 1);
+        BigDecimal last = closes.getLast();
         BigDecimal prev = closes.get(closes.size() - 5);
 
         int cmp = last.compareTo(prev);

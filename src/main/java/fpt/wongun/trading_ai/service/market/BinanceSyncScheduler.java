@@ -60,7 +60,7 @@ public class BinanceSyncScheduler {
                     continue;
                 }
 
-                String timeframe = existingCandles.get(0).getTimeframe();
+                String timeframe = existingCandles.getFirst().getTimeframe();
                 String interval = BinanceClient.mapTimeframeToInterval(timeframe);
 
                 // Fetch latest 200 candles (required for Bob Volman analysis with trend context)

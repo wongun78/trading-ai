@@ -67,8 +67,8 @@ public class BinanceClient {
             // Parse response to BinanceKline objects
             List<BinanceKline> klines = new ArrayList<>();
             for (Object item : response) {
-                if (item instanceof List) {
-                    Object[] arr = ((List<?>) item).toArray();
+                if (item instanceof List<?> list) {
+                    Object[] arr = list.toArray();
                     klines.add(BinanceKline.fromArray(arr));
                 }
             }

@@ -229,8 +229,8 @@ public class PositionService {
         List<Position> bestTrades = positionRepository.getBestTrades(userId, PageRequest.of(0, 1));
         List<Position> worstTrades = positionRepository.getWorstTrades(userId, PageRequest.of(0, 1));
 
-        BigDecimal bestTradePnL = bestTrades.isEmpty() ? BigDecimal.ZERO : bestTrades.get(0).getRealizedPnL();
-        BigDecimal worstTradePnL = worstTrades.isEmpty() ? BigDecimal.ZERO : worstTrades.get(0).getRealizedPnL();
+        BigDecimal bestTradePnL = bestTrades.isEmpty() ? BigDecimal.ZERO : bestTrades.getFirst().getRealizedPnL();
+        BigDecimal worstTradePnL = worstTrades.isEmpty() ? BigDecimal.ZERO : worstTrades.getFirst().getRealizedPnL();
 
         // Win rates
         Double winRate = positionRepository.getWinRateByUser(userId);
