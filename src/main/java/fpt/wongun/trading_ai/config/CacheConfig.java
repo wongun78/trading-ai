@@ -26,12 +26,12 @@ public class CacheConfig {
     public CacheManager cacheManager() {
         SimpleCacheManager cacheManager = new SimpleCacheManager();
         
-        // Cache with 30-second TTL
+        // Cache with 5-second TTL
         ConcurrentMapCache aiSignalsCache = new ConcurrentMapCache("aiSignals", 
             new ConcurrentHashMap<>(), 
             false) {
             
-            private final long TTL_MILLIS = TimeUnit.SECONDS.toMillis(30);
+            private final long TTL_MILLIS = TimeUnit.SECONDS.toMillis(5);
             private final ConcurrentHashMap<Object, Long> expirationMap = new ConcurrentHashMap<>();
             
             @Override
