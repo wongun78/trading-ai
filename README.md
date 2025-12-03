@@ -8,8 +8,13 @@
 
 Enterprise-grade AI trading system dựa trên **Bob Volman Price Action**, sử dụng Groq AI (Llama 3.3 70B) + OpenAI GPT-4 fallback. Includes type-safe enums, soft delete, auditing, global exception handling, và Volman Guards validation.
 
+## 🔒 Security Notice
+
+**⚠️ IMPORTANT**: If you cloned this repo before Dec 3, 2025, please read [SECURITY_NOTICE.md](SECURITY_NOTICE.md) immediately!
+
 ## 📋 Mục Lục
 
+- [Security Notice](#-security-notice)
 - [Tính Năng Chính](#-tính-năng-chính)
 - [Công Nghệ](#-công-nghệ)
 - [Kiến Trúc Hệ Thống](#-kiến-trúc-hệ-thống)

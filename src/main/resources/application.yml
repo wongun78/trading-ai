@@ -2,7 +2,7 @@ spring:
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/trading_ai}
     username: ${DB_USERNAME:trading_ai_user}
-    password: ${DB_PASSWORD:changeme}
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -25,7 +25,7 @@ server:
 # Get your free API key at https://console.groq.com
 groq:
   enabled: ${GROQ_ENABLED:true}
-  api-key: ${GROQ_API_KEY:changeme}
+  api-key: ${GROQ_API_KEY}
   base-url: ${GROQ_BASE_URL:https://api.groq.com/openai/v1}
   model: ${GROQ_MODEL:llama-3.3-70b-versatile}
   temperature: ${GROQ_TEMPERATURE:0.3}
@@ -33,7 +33,7 @@ groq:
 # OpenAI Configuration (PAID - Fallback when Groq is disabled)
 # Only used if groq.enabled=false
 openai:
-  api-key: ${OPENAI_API_KEY:changeme}
+  api-key: ${OPENAI_API_KEY}
   base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
   model: ${OPENAI_MODEL:gpt-4o-mini}
   temperature: ${OPENAI_TEMPERATURE:0.3}
