@@ -6,12 +6,14 @@ import fpt.wongun.trading_ai.domain.entity.Symbol;
 import fpt.wongun.trading_ai.domain.enums.Direction;
 import fpt.wongun.trading_ai.domain.enums.PositionStatus;
 import fpt.wongun.trading_ai.dto.*;
+import fpt.wongun.trading_ai.exception.ForbiddenException;
 import fpt.wongun.trading_ai.exception.InvalidPositionException;
 import fpt.wongun.trading_ai.exception.PositionNotFoundException;
 import fpt.wongun.trading_ai.exception.SymbolNotFoundException;
 import fpt.wongun.trading_ai.repository.AiSignalRepository;
 import fpt.wongun.trading_ai.repository.PositionRepository;
 import fpt.wongun.trading_ai.repository.SymbolRepository;
+import fpt.wongun.trading_ai.util.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -26,17 +28,18 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Service for managing trading positions.
+ * Implementation of PositionService.
  * Handles position opening, closing, and portfolio analytics.
  */
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class PositionService {
+public class PositionServiceImpl implements IPositionService {
 
     private final PositionRepository positionRepository;
     private final SymbolRepository symbolRepository;
     private final AiSignalRepository aiSignalRepository;
+    private final SecurityUtils securityUtils;
 
     /**
      * Open a new position (PENDING status initially)
@@ -88,6 +91,12 @@ public class PositionService {
 
         Position position = positionRepository.findById(positionId)
                 .orElseThrow(() -> new PositionNotFoundException(positionId));
+        
+        // Check ownership (only owner or admin can execute)
+        validateOwnership(position);
+        
+        // Check ownership (only owner or admin can close)
+        validateOwnership(position);
 
         if (position.getStatus() != PositionStatus.PENDING) {
             throw new InvalidPositionException("Position must be PENDING to execute");
@@ -151,6 +160,9 @@ public class PositionService {
 
         Position position = positionRepository.findById(positionId)
                 .orElseThrow(() -> new PositionNotFoundException(positionId));
+        
+        // Check ownership
+        validateOwnership(position);
 
         if (position.getStatus() != PositionStatus.PENDING) {
             throw new InvalidPositionException("Only PENDING positions can be cancelled");
@@ -165,15 +177,21 @@ public class PositionService {
 
     /**
      * Get position by ID
+     * Users can only see their own positions unless admin
      */
     public PositionResponseDto getPosition(Long positionId) {
         Position position = positionRepository.findById(positionId)
                 .orElseThrow(() -> new PositionNotFoundException(positionId));
+        
+        // Check ownership
+        validateOwnership(position);
+        
         return mapToDto(position);
     }
 
     /**
      * Get all positions with pagination and filtering
+     * Users see only their own positions, admins see all
      */
     public Page<PositionResponseDto> getPositions(
             String symbolCode,
@@ -182,18 +200,47 @@ public class PositionService {
             int size
     ) {
         Pageable pageable = PageRequest.of(page, size);
+        
+        // Determine if we should filter by user
+        String currentUsername = null;
+        if (!securityUtils.isAdmin()) {
+            currentUsername = securityUtils.getCurrentUsername();
+            log.debug("Filtering positions for user: {}", currentUsername);
+        }
 
         Page<Position> positions;
         
-        if (symbolCode != null && status != null) {
-            Symbol symbol = symbolRepository.findByCode(symbolCode)
-                    .orElseThrow(() -> new SymbolNotFoundException(symbolCode));
-            positions = positionRepository.findBySymbolAndStatusOrderByOpenedAtDesc(
-                    symbol, status, pageable);
-        } else if (status != null) {
-            positions = positionRepository.findByStatusOrderByOpenedAtDesc(status, pageable);
+        if (currentUsername != null) {
+            // Non-admin: filter by user
+            if (symbolCode != null && status != null) {
+                Symbol symbol = symbolRepository.findByCode(symbolCode)
+                        .orElseThrow(() -> new SymbolNotFoundException(symbolCode));
+                positions = positionRepository.findByCreatedByAndSymbolAndStatusOrderByOpenedAtDesc(
+                        currentUsername, symbol, status, pageable);
+            } else if (status != null) {
+                positions = positionRepository.findByCreatedByAndStatusOrderByOpenedAtDesc(
+                        currentUsername, status, pageable);
+            } else if (symbolCode != null) {
+                Symbol symbol = symbolRepository.findByCode(symbolCode)
+                        .orElseThrow(() -> new SymbolNotFoundException(symbolCode));
+                positions = positionRepository.findByCreatedByAndSymbolOrderByOpenedAtDesc(
+                        currentUsername, symbol, pageable);
+            } else {
+                positions = positionRepository.findByCreatedByOrderByOpenedAtDesc(
+                        currentUsername, pageable);
+            }
         } else {
-            positions = positionRepository.findAll(pageable);
+            // Admin: see all
+            if (symbolCode != null && status != null) {
+                Symbol symbol = symbolRepository.findByCode(symbolCode)
+                        .orElseThrow(() -> new SymbolNotFoundException(symbolCode));
+                positions = positionRepository.findBySymbolAndStatusOrderByOpenedAtDesc(
+                        symbol, status, pageable);
+            } else if (status != null) {
+                positions = positionRepository.findByStatusOrderByOpenedAtDesc(status, pageable);
+            } else {
+                positions = positionRepository.findAll(pageable);
+            }
         }
 
         return positions.map(this::mapToDto);
@@ -259,6 +306,24 @@ public class PositionService {
     /**
      * Map Position entity to DTO
      */
+    /**
+     * Validate that current user owns the position or is admin.
+     */
+    private void validateOwnership(Position position) {
+        if (securityUtils.isAdmin()) {
+            return; // Admin can access all positions
+        }
+        
+        String currentUsername = securityUtils.getCurrentUsername();
+        String positionOwner = position.getCreatedBy();
+        
+        if (positionOwner == null || !positionOwner.equals(currentUsername)) {
+            log.warn("User {} attempted to access position {} owned by {}", 
+                    currentUsername, position.getId(), positionOwner);
+            throw ForbiddenException.ownershipViolation("positions");
+        }
+    }
+    
     private PositionResponseDto mapToDto(Position position) {
         return PositionResponseDto.builder()
                 .id(position.getId())

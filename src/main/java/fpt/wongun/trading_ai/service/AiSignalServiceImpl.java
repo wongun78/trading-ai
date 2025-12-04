@@ -25,13 +25,13 @@ import java.math.BigDecimal;
 import java.time.Instant;
 
 /**
- * Service for AI signal generation and retrieval.
+ * Implementation of IAiSignalService.
  * Orchestrates market analysis, AI inference, and signal persistence.
  */
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class AiSignalService {
+public class AiSignalServiceImpl implements IAiSignalService {
 
     private final SymbolRepository symbolRepository;
     private final AiSignalRepository aiSignalRepository;
@@ -118,6 +118,17 @@ public class AiSignalService {
         return aiSignalRepository
                 .findBySymbolAndTimeframeAndCreatedAtBetween(symbol, timeframe, from, to, pageable)
                 .map(this::mapToDto);
+    }
+
+    /**
+     * Get signal by ID.
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public AiSignalResponseDto getSignalById(Long signalId) {
+        AiSignal signal = aiSignalRepository.findById(signalId)
+                .orElseThrow(() -> new InvalidSignalException("Signal not found with id: " + signalId));
+        return mapToDto(signal);
     }
 
     /**

@@ -5,6 +5,8 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -79,6 +81,30 @@ public class GlobalExceptionHandler {
         
         ApiResponse<Void> response = ApiResponse.error("INVALID_ARGUMENT", ex.getMessage());
         return ResponseEntity.badRequest().body(response);
+    }
+
+    /**
+     * Handle Spring Security Access Denied exceptions.
+     * Thrown when user doesn't have required role or permission.
+     */
+    @ExceptionHandler({AccessDeniedException.class, AuthorizationDeniedException.class})
+    public ResponseEntity<ApiResponse<Void>> handleAccessDeniedException(Exception ex) {
+        log.warn("Access denied: {}", ex.getMessage());
+        
+        Map<String, Object> details = new HashMap<>();
+        details.put("errorCode", "ACCESS_DENIED");
+        details.put("hint", "Check if you have the required role for this operation");
+        
+        ApiResponse<Void> response = ApiResponse.<Void>builder()
+            .success(false)
+            .error(ApiResponse.ErrorDetail.builder()
+                .code("ACCESS_DENIED")
+                .message("You do not have permission to access this resource")
+                .details(details)
+                .build())
+            .build();
+        
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
     }
 
     /**

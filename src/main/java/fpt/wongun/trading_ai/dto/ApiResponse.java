@@ -53,6 +53,17 @@ public class ApiResponse<T> {
     }
 
     /**
+     * Create a successful response with custom message
+     */
+    public static <T> ApiResponse<T> success(T data, String message) {
+        return ApiResponse.<T>builder()
+            .success(true)
+            .data(data)
+            .error(ErrorDetail.builder().message(message).build())
+            .build();
+    }
+
+    /**
      * Create an error response
      */
     public static <T> ApiResponse<T> error(String code, String message) {

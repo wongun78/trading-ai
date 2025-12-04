@@ -1,5 +1,7 @@
 package fpt.wongun.trading_ai.config;
 
+import fpt.wongun.trading_ai.util.SecurityUtils;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.domain.AuditorAware;
@@ -13,22 +15,17 @@ import java.util.Optional;
  */
 @Configuration
 @EnableJpaAuditing(auditorAwareRef = "auditorProvider")
+@RequiredArgsConstructor
 public class JpaAuditConfig {
+
+    private final SecurityUtils securityUtils;
 
     /**
      * Provides the current auditor (user) for audit fields.
-     * TODO: Replace with actual user from SecurityContext when authentication is implemented.
+     * Returns authenticated username or "SYSTEM" if no authentication context.
      */
     @Bean
     public AuditorAware<String> auditorProvider() {
-        return () -> {
-            // TODO: Get from SecurityContext
-            // return Optional.ofNullable(SecurityContextHolder.getContext())
-            //     .map(SecurityContext::getAuthentication)
-            //     .filter(Authentication::isAuthenticated)
-            //     .map(Authentication::getName);
-            
-            return Optional.of("SYSTEM");
-        };
+        return () -> Optional.of(securityUtils.getCurrentUsername());
     }
 }

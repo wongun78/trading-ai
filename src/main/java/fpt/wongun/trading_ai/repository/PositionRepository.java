@@ -42,6 +42,30 @@ public interface PositionRepository extends JpaRepository<Position, Long> {
             PositionStatus status, 
             Pageable pageable
     );
+    
+    /**
+     * Find positions by user, symbol, and status
+     */
+    Page<Position> findByCreatedByAndSymbolAndStatusOrderByOpenedAtDesc(
+            String createdBy,
+            Symbol symbol,
+            PositionStatus status,
+            Pageable pageable
+    );
+    
+    /**
+     * Find positions by user and symbol
+     */
+    Page<Position> findByCreatedByAndSymbolOrderByOpenedAtDesc(
+            String createdBy,
+            Symbol symbol,
+            Pageable pageable
+    );
+    
+    /**
+     * Find all positions by user
+     */
+    Page<Position> findByCreatedByOrderByOpenedAtDesc(String createdBy, Pageable pageable);
 
     /**
      * Find all open positions for a user

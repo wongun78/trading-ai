@@ -52,21 +52,11 @@ public class ProductionConfigValidator implements ApplicationListener<Applicatio
         if (groqEnabled) {
             if (groqApiKey == null || groqApiKey.isBlank()) {
                 errors.add("❌ GROQ_API_KEY is required when Groq is enabled! Get free key at https://console.groq.com");
-            } else if (groqApiKey.startsWith("gsk_your-") || groqApiKey.equals("changeme")) {
-                errors.add("❌ GROQ_API_KEY contains placeholder value! Replace with actual API key.");
             }
         } else {
             if (openAiApiKey == null || openAiApiKey.isBlank()) {
                 errors.add("❌ OPENAI_API_KEY is required when Groq is disabled! Get key at https://platform.openai.com/api-keys");
-            } else if (openAiApiKey.startsWith("sk-your-") || openAiApiKey.equals("changeme")) {
-                errors.add("❌ OPENAI_API_KEY contains placeholder value! Replace with actual API key.");
             }
-        }
-
-        // Validate CORS origins for production
-        if (allowedOrigins.contains("localhost")) {
-            log.warn("⚠️  WARNING: CORS allowed-origins contains 'localhost' in production! " +
-                    "Update ALLOWED_ORIGINS environment variable with your production domain.");
         }
 
         // Fail fast if any configuration is invalid
@@ -85,3 +75,5 @@ public class ProductionConfigValidator implements ApplicationListener<Applicatio
         log.info("✅ Production configuration validated successfully!");
     }
 }
+
+

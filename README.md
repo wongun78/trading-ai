@@ -1,12 +1,14 @@
 # Trading AI - Enterprise-Grade AI Trading System
 
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.4.12-brightgreen.svg)](https://spring.io/projects/spring-boot)
-[![Java](https://img.shields.io/badge/Java-17-orange.svg)](https://www.oracle.com/java/)
+[![Java](https://img.shields.io/badge/Java-21-orange.svg)](https://www.oracle.com/java/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-18.1-blue.svg)](https://www.postgresql.org/)
+[![Spring Security](https://img.shields.io/badge/Spring%20Security-7.x-green.svg)](https://spring.io/projects/spring-security)
+[![JWT](https://img.shields.io/badge/JWT-Auth-blueviolet.svg)](https://jwt.io/)
 [![Enterprise Grade](https://img.shields.io/badge/Enterprise-Grade-success.svg)]()
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-Enterprise-grade AI trading system dựa trên **Bob Volman Price Action**, sử dụng Groq AI (Llama 3.3 70B) + OpenAI GPT-4 fallback. Includes type-safe enums, soft delete, auditing, global exception handling, và Volman Guards validation.
+Enterprise-grade AI trading system dựa trên **Bob Volman Price Action**, sử dụng Groq AI (Llama 3.3 70B) + OpenAI GPT-4 fallback. Includes Spring Security + JWT authentication, RBAC, type-safe enums, soft delete, auditing, global exception handling, và Volman Guards validation.
 
 ## 🔒 Security Notice
 
@@ -17,6 +19,7 @@ Enterprise-grade AI trading system dựa trên **Bob Volman Price Action**, sử
 - [Security Notice](#-security-notice)
 - [Tính Năng Chính](#-tính-năng-chính)
 - [Công Nghệ](#-công-nghệ)
+- [Authentication & Security](#-authentication--security)
 - [Kiến Trúc Hệ Thống](#-kiến-trúc-hệ-thống)
 - [Yêu Cầu Hệ Thống](#-yêu-cầu-hệ-thống)
 - [Cài Đặt](#-cài-đặt)
@@ -30,16 +33,28 @@ Enterprise-grade AI trading system dựa trên **Bob Volman Price Action**, sử
 
 ## ✨ Tính Năng Chính
 
+### 🔐 Authentication & Security
+
+- **Spring Security 7.x**: JWT-based stateless authentication
+- **Role-Based Access Control (RBAC)**: 3 roles - ADMIN, TRADER, VIEWER
+- **User Management**: User registration, login, profile management
+- **JWT Tokens**: 24-hour expiration, BCrypt password encryption
+- **Method Security**: @PreAuthorize annotations on controller endpoints
+- **Ownership Validation**: Users can only access their own positions/signals
+- **Data Isolation**: Automatic filtering by user in service layer
+- **Swagger Auth**: BearerAuth scheme in OpenAPI documentation
+
 ### 🏢 Enterprise-Grade Architecture
 
 - **BaseEntity Pattern**: Auditing fields (createdAt/By, updatedAt/By), soft delete, optimistic locking
 - **Type-safe Enums**: TradingMode (SCALPING/INTRADAY/SWING), Timeframe (M1-W1), Direction (LONG/SHORT/NEUTRAL)
-- **Custom Exception Hierarchy**: TradingException → SymbolNotFoundException, InvalidSignalException, MarketDataException, AiServiceException
+- **Custom Exception Hierarchy**: TradingException → SymbolNotFoundException, InvalidSignalException, MarketDataException, AiServiceException, ForbiddenException
 - **ApiResponse Wrapper**: Consistent API responses với success/data/error/timestamp
-- **Global Exception Handler**: Centralized error handling cho tất cả REST endpoints
-- **JPA Auditing**: Tự động track created/modified by user và timestamp
+- **Global Exception Handler**: Centralized error handling cho tất cả REST endpoints (including 401/403)
+- **JPA Auditing**: Tự động track created/modified by real username (via SecurityUtils)
 - **Soft Delete Support**: @SQLDelete và @SQLRestriction cho recovery
 - **Validation Framework**: @NotNull, @Min, @Max, @Valid trên entities và DTOs
+- **Interface/Implementation Pattern**: Clean separation of service contracts and implementation
 
 ### 🤖 AI Trading Engine
 

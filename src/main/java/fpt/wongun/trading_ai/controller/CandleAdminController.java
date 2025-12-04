@@ -11,12 +11,16 @@ import fpt.wongun.trading_ai.repository.CandleRepository;
 import fpt.wongun.trading_ai.repository.SymbolRepository;
 import fpt.wongun.trading_ai.service.market.BinanceClient;
 import fpt.wongun.trading_ai.service.market.BinanceKline;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -33,6 +37,8 @@ import java.util.*;
 @RequiredArgsConstructor
 @Slf4j
 @Validated
+@Tag(name = "Admin - Candles", description = "Market data management (Admin only)")
+@PreAuthorize("hasRole('ADMIN')")
 public class CandleAdminController {
 
     private final CandleRepository candleRepository;

@@ -2,7 +2,10 @@ package fpt.wongun.trading_ai.controller;
 
 import fpt.wongun.trading_ai.domain.enums.PositionStatus;
 import fpt.wongun.trading_ai.dto.*;
-import fpt.wongun.trading_ai.service.PositionService;
+import fpt.wongun.trading_ai.service.IPositionService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -11,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,9 +29,10 @@ import java.util.List;
 @RequiredArgsConstructor
 @Slf4j
 @Validated
+@Tag(name = "Positions", description = "Trade execution and portfolio management")
 public class PositionController {
 
-    private final PositionService positionService;
+    private final IPositionService positionService;
 
     /**
      * Open a new trading position
@@ -35,6 +40,12 @@ public class PositionController {
      * POST /api/positions
      */
     @PostMapping
+    @PreAuthorize("hasRole('TRADER') or hasRole('ADMIN')")
+    @Operation(
+        summary = "Open new position",
+        description = "Execute a new trading position based on signal or manual entry",
+        security = @SecurityRequirement(name = "bearerAuth")
+    )
     public ResponseEntity<ApiResponse<PositionResponseDto>> openPosition(
             @Valid @RequestBody OpenPositionRequestDto request
     ) {
