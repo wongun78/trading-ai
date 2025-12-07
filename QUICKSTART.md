@@ -150,15 +150,18 @@ curl -X POST http://localhost:8080/api/signals/ai-suggest \
 
 ---
 
-## 🎯 What's New
+## 🎯 Project Status
 
 ✅ **Spring Security + JWT** - Token-based authentication  
 ✅ **Swagger/OpenAPI** - Interactive API docs  
 ✅ **Docker** - Production-ready deployment  
 ✅ **Role-Based Access** - ADMIN/TRADER/VIEWER  
-✅ **Enterprise Security** - BCrypt, CORS, CSRF protection  
+✅ **Binance Integration** - Real-time crypto data (5s sync)  
+✅ **Market Data**: 400 candles (BTCUSDT + ETHUSDT)  
+⏳ **AI Signals**: Ready to generate  
+⏳ **Trading**: 0 active positions  
 
-See **ENTERPRISE_UPGRADE.md** for full details.
+See **README.md** for full documentation.
 
 ---
 

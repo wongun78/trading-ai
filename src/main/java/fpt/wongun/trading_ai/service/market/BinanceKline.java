@@ -6,15 +6,6 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 
-/**
- * DTO for Binance Kline/Candlestick data.
- * 
- * Binance API returns klines as array:
- * [
- *   openTime, open, high, low, close, volume,
- *   closeTime, quoteVolume, trades, takerBuyBase, takerBuyQuote, ignore
- * ]
- */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -32,10 +23,6 @@ public class BinanceKline {
     private BigDecimal takerBuyQuoteVolume; // 10
     private String ignore;        // 11
 
-    /**
-     * Parse from Binance API array response.
-     * Example: [1609459200000,"29000","29100","28900","29050","100.5",...]
-     */
     public static BinanceKline fromArray(Object[] arr) {
         BinanceKline kline = new BinanceKline();
         kline.setOpenTime(Long.parseLong(arr[0].toString()));

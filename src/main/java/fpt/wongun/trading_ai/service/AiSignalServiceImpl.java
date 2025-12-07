@@ -24,10 +24,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.Instant;
 
-/**
- * Implementation of IAiSignalService.
- * Orchestrates market analysis, AI inference, and signal persistence.
- */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -38,10 +34,6 @@ public class AiSignalServiceImpl implements IAiSignalService {
     private final MarketAnalysisService marketAnalysisService;
     private final AiClient aiClient;
 
-    /**
-     * Generate AI trading signal for given request.
-     * Results are cached for 30 seconds to reduce API calls.
-     */
     @Cacheable(value = "aiSignals", 
                key = "#request.symbolCode + '_' + #request.timeframe + '_' + #request.mode", 
                unless = "#result.reasoning != null && #result.reasoning.contains('unavailable')")
@@ -93,9 +85,6 @@ public class AiSignalServiceImpl implements IAiSignalService {
         return mapToDto(entity);
     }
 
-    /**
-     * Retrieve paginated signal history.
-     */
     @Transactional(readOnly = true)
     public Page<AiSignalResponseDto> getSignals(String symbolCode,
                                                 String timeframe,
@@ -120,9 +109,6 @@ public class AiSignalServiceImpl implements IAiSignalService {
                 .map(this::mapToDto);
     }
 
-    /**
-     * Get signal by ID.
-     */
     @Override
     @Transactional(readOnly = true)
     public AiSignalResponseDto getSignalById(Long signalId) {
@@ -131,9 +117,6 @@ public class AiSignalServiceImpl implements IAiSignalService {
         return mapToDto(signal);
     }
 
-    /**
-     * Validate AI-generated signal follows Volman Guards and business rules.
-     */
     private void validateSignal(TradeSuggestion signal) {
         if (signal.getDirection() == null) {
             throw new InvalidSignalException("AI returned null direction");

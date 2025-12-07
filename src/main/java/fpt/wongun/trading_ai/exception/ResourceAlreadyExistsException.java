@@ -2,9 +2,6 @@ package fpt.wongun.trading_ai.exception;
 
 import org.springframework.http.HttpStatus;
 
-/**
- * Exception thrown when attempting to create a resource that already exists.
- */
 public class ResourceAlreadyExistsException extends TradingException {
 
     public ResourceAlreadyExistsException(String message) {

@@ -9,10 +9,6 @@ import lombok.*;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 
-/**
- * Trading symbol entity (e.g., BTCUSDT, XAUUSD).
- * Represents a tradeable asset with metadata.
- */
 @Entity
 @Table(name = "symbols")
 @SQLDelete(sql = "UPDATE symbols SET deleted = true, deleted_at = NOW(), deleted_by = 'SYSTEM' WHERE id = ? AND version = ?")

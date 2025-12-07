@@ -2,9 +2,6 @@ package fpt.wongun.trading_ai.exception;
 
 import org.springframework.http.HttpStatus;
 
-/**
- * Exception thrown when an invalid position operation is attempted.
- */
 public class InvalidPositionException extends TradingException {
     
     public InvalidPositionException(String message) {

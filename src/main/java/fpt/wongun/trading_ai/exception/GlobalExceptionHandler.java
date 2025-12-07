@@ -16,17 +16,10 @@ import org.springframework.web.context.request.WebRequest;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Global exception handler for all REST controllers.
- * Provides consistent error responses across the application.
- */
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
 
-    /**
-     * Handle TradingException and its subclasses
-     */
     @ExceptionHandler(TradingException.class)
     public ResponseEntity<ApiResponse<Void>> handleTradingException(TradingException ex, WebRequest request) {
         log.error("Trading exception: {} - {}", ex.getErrorCode(), ex.getMessage());
@@ -35,9 +28,6 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(ex.getHttpStatus()).body(response);
     }
 
-    /**
-     * Handle validation errors from @Valid annotation
-     */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<Void>> handleValidationException(MethodArgumentNotValidException ex) {
         log.warn("Validation error: {}", ex.getMessage());
@@ -61,9 +51,6 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(response);
     }
 
-    /**
-     * Handle JPA EntityNotFoundException
-     */
     @ExceptionHandler(EntityNotFoundException.class)
     public ResponseEntity<ApiResponse<Void>> handleEntityNotFoundException(EntityNotFoundException ex) {
         log.error("Entity not found: {}", ex.getMessage());
@@ -72,9 +59,6 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
     }
 
-    /**
-     * Handle IllegalArgumentException (for enum parsing, etc.)
-     */
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiResponse<Void>> handleIllegalArgumentException(IllegalArgumentException ex) {
         log.warn("Illegal argument: {}", ex.getMessage());
@@ -83,10 +67,6 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(response);
     }
 
-    /**
-     * Handle Spring Security Access Denied exceptions.
-     * Thrown when user doesn't have required role or permission.
-     */
     @ExceptionHandler({AccessDeniedException.class, AuthorizationDeniedException.class})
     public ResponseEntity<ApiResponse<Void>> handleAccessDeniedException(Exception ex) {
         log.warn("Access denied: {}", ex.getMessage());
@@ -107,9 +87,6 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
     }
 
-    /**
-     * Handle all other unexpected exceptions
-     */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGenericException(Exception ex, WebRequest request) {
         log.error("Unexpected error: ", ex);

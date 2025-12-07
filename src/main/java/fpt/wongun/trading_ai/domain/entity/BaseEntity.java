@@ -11,10 +11,6 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
 
-/**
- * Base entity with auditing fields and soft delete support.
- * All entities should extend this class for consistent auditing and deletion tracking.
- */
 @MappedSuperclass
 @EntityListeners(AuditingEntityListener.class)
 @Getter
@@ -48,18 +44,12 @@ public abstract class BaseEntity {
     @Column(length = 100)
     private String deletedBy;
 
-    /**
-     * Soft delete the entity
-     */
     public void softDelete(String deletedBy) {
         this.deleted = true;
         this.deletedAt = Instant.now();
         this.deletedBy = deletedBy;
     }
 
-    /**
-     * Check if entity is deleted
-     */
     public boolean isDeleted() {
         return Boolean.TRUE.equals(deleted);
     }

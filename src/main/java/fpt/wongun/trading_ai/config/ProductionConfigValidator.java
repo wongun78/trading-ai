@@ -11,12 +11,6 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Validates that all required configuration is properly set in production environment.
- * Prevents application startup with default/placeholder values for sensitive configurations.
- * 
- * This validator only runs when spring.profiles.active=prod
- */
 @Component
 @Profile("prod")
 @Slf4j
@@ -75,5 +69,4 @@ public class ProductionConfigValidator implements ApplicationListener<Applicatio
         log.info("✅ Production configuration validated successfully!");
     }
 }
-
 

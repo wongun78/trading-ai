@@ -11,10 +11,6 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.Instant;
 
-/**
- * Response DTO for Position entity.
- * Contains full position details and P&L information.
- */
 @Data
 @Builder
 @NoArgsConstructor

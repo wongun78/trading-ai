@@ -10,10 +10,6 @@ import org.hibernate.annotations.SQLRestriction;
 import java.math.BigDecimal;
 import java.time.Instant;
 
-/**
- * Candlestick data entity.
- * Stores OHLCV (Open, High, Low, Close, Volume) data for technical analysis.
- */
 @Entity
 @Table(name = "candles",
        uniqueConstraints = {

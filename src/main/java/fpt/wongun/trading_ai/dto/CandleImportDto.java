@@ -7,9 +7,6 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.time.Instant;
 
-/**
- * DTO for bulk importing candle data.
- */
 @Data
 public class CandleImportDto {
 

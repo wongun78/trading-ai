@@ -11,9 +11,6 @@ import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import io.swagger.v3.oas.annotations.servers.Server;
 import org.springframework.context.annotation.Configuration;
 
-/**
- * OpenAPI/Swagger configuration for API documentation.
- */
 @Configuration
 @OpenAPIDefinition(
     info = @Info(

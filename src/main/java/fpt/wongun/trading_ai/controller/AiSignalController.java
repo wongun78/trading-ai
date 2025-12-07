@@ -20,10 +20,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
 
-/**
- * REST Controller for AI trading signal generation and retrieval.
- * Provides endpoints for generating signals and querying signal history.
- */
 @RestController
 @RequestMapping("/api/signals")
 @RequiredArgsConstructor
@@ -34,16 +30,6 @@ public class AiSignalController {
 
     private final IAiSignalService aiSignalService;
 
-    /**
-     * Generate AI trading signal.
-     * 
-     * POST /api/signals/ai-suggest
-     * {
-     *   "symbolCode": "BTCUSDT",
-     *   "timeframe": "M5",
-     *   "mode": "SCALPING"
-     * }
-     */
     @PostMapping("/ai-suggest")
     @PreAuthorize("hasRole('TRADER') or hasRole('ADMIN')")
     @Operation(
@@ -64,11 +50,6 @@ public class AiSignalController {
         return ResponseEntity.ok(ApiResponse.success(signal));
     }
 
-    /**
-     * Retrieve paginated signal history.
-     * 
-     * GET /api/signals?symbolCode=BTCUSDT&timeframe=M5&page=0&size=20
-     */
     @GetMapping
     public ResponseEntity<ApiResponse<Page<AiSignalResponseDto>>> list(
             @RequestParam String symbolCode,

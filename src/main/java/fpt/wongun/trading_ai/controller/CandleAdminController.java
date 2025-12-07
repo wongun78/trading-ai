@@ -28,10 +28,6 @@ import org.springframework.web.bind.annotation.*;
 import java.time.Instant;
 import java.util.*;
 
-/**
- * Admin controller for managing candle data import and deletion.
- * Supports importing real-time data from Binance API.
- */
 @RestController
 @RequestMapping("/api/admin/candles")
 @RequiredArgsConstructor
@@ -45,11 +41,6 @@ public class CandleAdminController {
     private final SymbolRepository symbolRepository;
     private final BinanceClient binanceClient;
 
-    /**
-     * Get candles for a specific symbol and timeframe.
-     * 
-     * GET /api/admin/candles?symbolCode=BTCUSDT&timeframe=M5&limit=100
-     */
     @GetMapping
     public ResponseEntity<ApiResponse<List<CandleResponseDto>>> getCandles(
             @RequestParam String symbolCode,
@@ -82,11 +73,6 @@ public class CandleAdminController {
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
-    /**
-     * Bulk import candles from JSON array.
-     * 
-     * POST /api/admin/candles/bulk-import
-     */
     @PostMapping("/bulk-import")
     @Transactional
     public ResponseEntity<ApiResponse<Map<String, Object>>> bulkImport(
@@ -135,11 +121,6 @@ public class CandleAdminController {
         return ResponseEntity.ok(ApiResponse.success(result));
     }
 
-    /**
-     * Delete candles by symbol and/or timeframe.
-     * 
-     * DELETE /api/admin/candles?symbolCode=BTCUSDT&timeframe=M5
-     */
     @DeleteMapping
     @Transactional
     public ResponseEntity<ApiResponse<Map<String, Object>>> deleteCandles(
@@ -175,11 +156,6 @@ public class CandleAdminController {
         return ResponseEntity.ok(ApiResponse.success(result));
     }
 
-    /**
-     * Import real-time candles from Binance API.
-     * 
-     * POST /api/admin/candles/import-binance?symbol=BTCUSDT&timeframe=M5&limit=200
-     */
     @PostMapping("/import-binance")
     @Transactional
     public ResponseEntity<ApiResponse<Map<String, Object>>> importFromBinance(
@@ -237,9 +213,6 @@ public class CandleAdminController {
         }
     }
 
-    /**
-     * Helper method to create a new Symbol based on symbol code.
-     */
     private Symbol createSymbol(String code) {
         SymbolType type;
         String description;

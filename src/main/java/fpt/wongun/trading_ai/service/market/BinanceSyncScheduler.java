@@ -14,10 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.List;
 
-/**
- * Scheduled service to automatically sync latest candles from Binance API.
- * Runs every 5 minutes to keep crypto data up-to-date.
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -27,12 +23,6 @@ public class BinanceSyncScheduler {
     private final SymbolRepository symbolRepository;
     private final CandleRepository candleRepository;
 
-    /**
-     * Sync latest candles for all crypto symbols.
-     * Runs every 5 seconds for real-time updates.
-     * 
-     * Fetches 200 candles and replaces old data (delete-then-insert pattern).
-     */
     @Scheduled(fixedRate = 5000)  // 5 seconds
     @Transactional
     public void syncLatestCandles() {
@@ -104,10 +94,6 @@ public class BinanceSyncScheduler {
         log.info("Binance sync completed. Total candles synced: {}", totalSynced);
     }
 
-    /**
-     * Initial sync on application startup.
-     * Delays 30 seconds to allow app to fully initialize.
-     */
     @Scheduled(initialDelay = 30000, fixedDelay = Long.MAX_VALUE)  // Run once 30s after startup
     @Transactional
     public void initialSync() {

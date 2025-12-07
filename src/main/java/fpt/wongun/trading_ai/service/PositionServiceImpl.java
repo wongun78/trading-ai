@@ -27,10 +27,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * Implementation of PositionService.
- * Handles position opening, closing, and portfolio analytics.
- */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -41,9 +37,6 @@ public class PositionServiceImpl implements IPositionService {
     private final AiSignalRepository aiSignalRepository;
     private final SecurityUtils securityUtils;
 
-    /**
-     * Open a new position (PENDING status initially)
-     */
     @Transactional
     public PositionResponseDto openPosition(OpenPositionRequestDto request) {
         log.info("Opening new position for symbol: {}, direction: {}", 
@@ -82,9 +75,6 @@ public class PositionServiceImpl implements IPositionService {
         return mapToDto(position);
     }
 
-    /**
-     * Execute position (change from PENDING to OPEN)
-     */
     @Transactional
     public PositionResponseDto executePosition(Long positionId, ExecutePositionRequestDto request) {
         log.info("Executing position ID: {} at price: {}", positionId, request.getActualEntryPrice());
@@ -112,9 +102,6 @@ public class PositionServiceImpl implements IPositionService {
         return mapToDto(position);
     }
 
-    /**
-     * Close an open position
-     */
     @Transactional
     public PositionResponseDto closePosition(Long positionId, ClosePositionRequestDto request) {
         log.info("Closing position ID: {} at price: {}, reason: {}", 
@@ -151,9 +138,6 @@ public class PositionServiceImpl implements IPositionService {
         return mapToDto(position);
     }
 
-    /**
-     * Cancel a pending position
-     */
     @Transactional
     public PositionResponseDto cancelPosition(Long positionId) {
         log.info("Cancelling position ID: {}", positionId);
@@ -175,10 +159,6 @@ public class PositionServiceImpl implements IPositionService {
         return mapToDto(position);
     }
 
-    /**
-     * Get position by ID
-     * Users can only see their own positions unless admin
-     */
     public PositionResponseDto getPosition(Long positionId) {
         Position position = positionRepository.findById(positionId)
                 .orElseThrow(() -> new PositionNotFoundException(positionId));
@@ -189,10 +169,6 @@ public class PositionServiceImpl implements IPositionService {
         return mapToDto(position);
     }
 
-    /**
-     * Get all positions with pagination and filtering
-     * Users see only their own positions, admins see all
-     */
     public Page<PositionResponseDto> getPositions(
             String symbolCode,
             PositionStatus status,
@@ -246,9 +222,6 @@ public class PositionServiceImpl implements IPositionService {
         return positions.map(this::mapToDto);
     }
 
-    /**
-     * Get open positions for current user
-     */
     public List<PositionResponseDto> getOpenPositions(String userId) {
         List<Position> positions = positionRepository.findByCreatedByAndStatus(
                 userId, PositionStatus.OPEN);
@@ -257,9 +230,6 @@ public class PositionServiceImpl implements IPositionService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Get portfolio statistics for a user
-     */
     public PortfolioStatsDto getPortfolioStats(String userId) {
         log.info("Calculating portfolio stats for user: {}", userId);
 
@@ -303,12 +273,6 @@ public class PositionServiceImpl implements IPositionService {
                 .build();
     }
 
-    /**
-     * Map Position entity to DTO
-     */
-    /**
-     * Validate that current user owns the position or is admin.
-     */
     private void validateOwnership(Position position) {
         if (securityUtils.isAdmin()) {
             return; // Admin can access all positions

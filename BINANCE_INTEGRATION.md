@@ -70,9 +70,9 @@ curl -X POST "http://localhost:8080/api/admin/candles/import-binance?symbol=BTCU
 
 ### 4. **Scheduled Auto-Sync** ⏰
 - **File**: `src/main/java/fpt/wongun/trading_ai/service/market/BinanceSyncScheduler.java`
-- **Purpose**: Automatically update crypto data every 5 minutes
+- **Purpose**: Automatically update crypto data every 5 seconds
 - **Features**:
-  - Runs every **5 minutes** (300,000ms) for all CRYPTO symbols
+  - Runs every **5 seconds** (5,000ms fixed delay) for all CRYPTO symbols
   - Initial sync **30 seconds** after application startup
   - Fetches latest **20 candles** per symbol (efficient API usage)
   - Replaces old candles to keep database clean
@@ -81,11 +81,11 @@ curl -X POST "http://localhost:8080/api/admin/candles/import-binance?symbol=BTCU
 
 **Scheduler Behavior**:
 ```
-[14:33:00] App starts
-[14:33:30] Initial sync → Fetch 20 candles for BTCUSDT, ETHUSDT
-[14:38:30] Scheduled sync #1
-[14:43:30] Scheduled sync #2
-... every 5 minutes ...
+[07:00:00] App starts
+[07:00:05] Initial sync → Fetch 200 candles for BTCUSDT, ETHUSDT
+[07:00:10] Scheduled sync #1
+[07:00:15] Scheduled sync #2
+... every 5 seconds ...
 ```
 
 **Enable Scheduling**:
@@ -155,12 +155,12 @@ Symbol Code: [BTC/USDT - Bitcoin ▼]
 6. Frontend displays signal with reasoning
 ```
 
-### Auto-Update (Every 5 Minutes)
+### Auto-Update (Every 5 Seconds)
 ```
-1. Scheduler wakes up at 14:43:30
+1. Scheduler wakes up every 5 seconds
 2. Finds all CRYPTO symbols (BTCUSDT, ETHUSDT)
 3. For each symbol:
-   - Fetch latest 20 candles from Binance
+   - Fetch latest 200 candles from Binance
    - Delete old candles from DB
    - Save new candles
 4. Log: "Synced 20 candles for BTCUSDT/M5 (deleted 20 old candles)"
@@ -244,9 +244,9 @@ Binance public API allows:
 - **100,000 requests/day** per IP
 
 Our scheduler usage:
-- **5-minute interval** = 12 syncs/hour = 288 syncs/day
-- **5 crypto symbols** = 1,440 requests/day
-- **Well within limits** ✅
+- **5-second interval** = 720 syncs/hour = 17,280 syncs/day
+- **2 crypto symbols** = 34,560 requests/day
+- **Well within limits** ✅ (100K daily limit)
 
 ## Architecture Benefits
 

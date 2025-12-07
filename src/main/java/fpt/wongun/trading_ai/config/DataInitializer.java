@@ -12,10 +12,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.Set;
 
-/**
- * Data initializer for roles and admin user.
- * Runs on application startup to ensure required data exists.
- */
 @Component
 @RequiredArgsConstructor
 @Slf4j

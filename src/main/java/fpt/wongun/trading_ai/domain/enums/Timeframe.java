@@ -5,10 +5,6 @@ import lombok.Getter;
 
 import java.util.Arrays;
 
-/**
- * Trading timeframes with Binance interval mapping.
- * Type-safe enum to prevent invalid timeframe strings.
- */
 @Getter
 @AllArgsConstructor
 public enum Timeframe {
@@ -25,9 +21,6 @@ public enum Timeframe {
     private final String displayName;
     private final int seconds;
 
-    /**
-     * Convert from Binance interval string to Timeframe enum
-     */
     public static Timeframe fromBinanceInterval(String interval) {
         return Arrays.stream(values())
             .filter(tf -> tf.binanceInterval.equals(interval))
@@ -35,9 +28,6 @@ public enum Timeframe {
             .orElseThrow(() -> new IllegalArgumentException("Invalid Binance interval: " + interval));
     }
 
-    /**
-     * Convert from string (case-insensitive)
-     */
     public static Timeframe fromString(String timeframe) {
         if (timeframe == null) {
             return M5; // Default

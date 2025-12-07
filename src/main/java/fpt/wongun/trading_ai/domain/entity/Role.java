@@ -3,9 +3,6 @@ package fpt.wongun.trading_ai.domain.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
-/**
- * Role entity for authorization.
- */
 @Entity
 @Table(name = "roles")
 @Getter

@@ -7,9 +7,6 @@ import lombok.NoArgsConstructor;
 
 import java.util.Set;
 
-/**
- * DTO for user login response.
- */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

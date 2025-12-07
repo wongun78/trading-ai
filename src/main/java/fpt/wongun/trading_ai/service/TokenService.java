@@ -17,9 +17,6 @@ import javax.crypto.SecretKey;
 import java.util.*;
 import java.util.stream.Collectors;
 
-/**
- * Service for JWT token generation and validation.
- */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -28,9 +25,6 @@ public class TokenService {
     private final JwtProperties jwtProperties;
     private static final String AUTHORITIES_KEY = "roles";
 
-    /**
-     * Generate JWT token from authentication.
-     */
     public String generateToken(Authentication authentication) {
         String username = authentication.getName();
         Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
@@ -51,9 +45,6 @@ public class TokenService {
                 .compact();
     }
 
-    /**
-     * Get authentication from JWT token.
-     */
     public Authentication getAuthenticationFromToken(String token) {
         try {
             Claims claims = Jwts.parser()
@@ -81,9 +72,6 @@ public class TokenService {
         }
     }
 
-    /**
-     * Validate JWT token.
-     */
     public boolean validateToken(String token) {
         try {
             Jwts.parser()
@@ -97,17 +85,11 @@ public class TokenService {
         }
     }
 
-    /**
-     * Get signing key from secret.
-     */
     private SecretKey getSigningKey() {
         byte[] keyBytes = Decoders.BASE64.decode(jwtProperties.getSecret());
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
-    /**
-     * Get token expiration in milliseconds.
-     */
     public long getExpirationMs() {
         return jwtProperties.getExpiration();
     }

@@ -21,9 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-/**
- * Service for authentication operations.
- */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -35,9 +32,6 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final TokenService tokenService;
 
-    /**
-     * Authenticate user and generate JWT token.
-     */
     @Transactional(readOnly = true)
     public LoginResponseDto login(LoginRequestDto request) {
         log.info("User attempting login: {}", request.getUsername());
@@ -75,9 +69,6 @@ public class AuthService {
                 .build();
     }
 
-    /**
-     * Register new user with TRADER role by default.
-     */
     @Transactional
     public LoginResponseDto register(RegisterRequestDto request) {
         log.info("New user registration: {}", request.getUsername());

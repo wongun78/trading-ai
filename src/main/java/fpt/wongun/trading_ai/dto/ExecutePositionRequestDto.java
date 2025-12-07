@@ -9,18 +9,12 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 
-/**
- * Request DTO for executing a pending position
- */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class ExecutePositionRequestDto {
 
-    /**
-     * Actual entry price (filled price)
-     */
     @NotNull(message = "Actual entry price is required")
     @Positive(message = "Actual entry price must be positive")
     private BigDecimal actualEntryPrice;

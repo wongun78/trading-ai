@@ -13,9 +13,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-/**
- * REST Controller for authentication operations.
- */
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -25,10 +22,6 @@ public class AuthController {
 
     private final AuthService authService;
 
-    /**
-     * User login endpoint.
-     * Returns JWT token for authenticated requests.
-     */
     @PostMapping("/login")
     @Operation(summary = "User login", description = "Authenticate user and receive JWT token")
     public ResponseEntity<ApiResponse<LoginResponseDto>> login(@Valid @RequestBody LoginRequestDto request) {
@@ -37,10 +30,6 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success(response, "Login successful"));
     }
 
-    /**
-     * User registration endpoint.
-     * Creates new user with TRADER role and returns JWT token.
-     */
     @PostMapping("/register")
     @Operation(summary = "User registration", description = "Register new user and receive JWT token")
     public ResponseEntity<ApiResponse<LoginResponseDto>> register(@Valid @RequestBody RegisterRequestDto request) {

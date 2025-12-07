@@ -10,10 +10,6 @@ import org.hibernate.annotations.SQLRestriction;
 
 import java.math.BigDecimal;
 
-/**
- * AI-generated trading signal entity.
- * Stores trading recommendations with entry, stop-loss, and take-profit levels.
- */
 @Entity
 @Table(name = "ai_signals",
        indexes = {
@@ -76,10 +72,6 @@ public class AiSignal extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String reasoning; // JSON or long text
 
-    /**
-     * Validate signal consistency.
-     * LONG/SHORT signals must have entry and stopLoss.
-     */
     @PrePersist
     @PreUpdate
     private void validateSignal() {

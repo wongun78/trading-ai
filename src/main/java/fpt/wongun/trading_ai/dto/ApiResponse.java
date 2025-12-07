@@ -8,26 +8,6 @@ import lombok.NoArgsConstructor;
 
 import java.time.Instant;
 
-/**
- * Standard API response wrapper for consistent response format.
- * 
- * Success response:
- * {
- *   "success": true,
- *   "data": {...},
- *   "timestamp": "2025-12-01T10:00:00Z"
- * }
- * 
- * Error response:
- * {
- *   "success": false,
- *   "error": {
- *     "code": "SYMBOL_NOT_FOUND",
- *     "message": "Symbol 'XYZ' not found"
- *   },
- *   "timestamp": "2025-12-01T10:00:00Z"
- * }
- */
 @Data
 @Builder
 @NoArgsConstructor
@@ -42,9 +22,6 @@ public class ApiResponse<T> {
     @Builder.Default
     private Instant timestamp = Instant.now();
 
-    /**
-     * Create a successful response
-     */
     public static <T> ApiResponse<T> success(T data) {
         return ApiResponse.<T>builder()
             .success(true)
@@ -52,9 +29,6 @@ public class ApiResponse<T> {
             .build();
     }
 
-    /**
-     * Create a successful response with custom message
-     */
     public static <T> ApiResponse<T> success(T data, String message) {
         return ApiResponse.<T>builder()
             .success(true)
@@ -63,9 +37,6 @@ public class ApiResponse<T> {
             .build();
     }
 
-    /**
-     * Create an error response
-     */
     public static <T> ApiResponse<T> error(String code, String message) {
         return ApiResponse.<T>builder()
             .success(false)
@@ -76,9 +47,6 @@ public class ApiResponse<T> {
             .build();
     }
 
-    /**
-     * Error detail nested object
-     */
     @Data
     @Builder
     @NoArgsConstructor

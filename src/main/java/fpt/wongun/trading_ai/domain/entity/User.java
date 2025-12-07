@@ -7,9 +7,6 @@ import org.hibernate.annotations.SQLRestriction;
 
 import java.util.Set;
 
-/**
- * User entity for authentication and authorization.
- */
 @Entity
 @Table(name = "users", indexes = {
     @Index(name = "idx_user_username", columnList = "username"),

@@ -15,9 +15,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Collection;
 import java.util.stream.Collectors;
 
-/**
- * Custom UserDetailsService implementation.
- */
 @Service
 @RequiredArgsConstructor
 @Slf4j

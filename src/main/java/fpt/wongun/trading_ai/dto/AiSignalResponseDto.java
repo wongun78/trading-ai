@@ -10,10 +10,6 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.Instant;
 
-/**
- * Response DTO for AI-generated trading signals.
- * Contains complete signal information including entry, SL, TP levels.
- */
 @Data
 @Builder
 @NoArgsConstructor
@@ -35,17 +31,11 @@ public class AiSignalResponseDto {
     private String reasoning;
     private Instant createdAt;
 
-    /**
-     * Computed field: Is this signal actionable (not NEUTRAL)?
-     */
     @JsonProperty("isActionable")
     public boolean isActionable() {
         return direction != null && direction != Direction.NEUTRAL;
     }
 
-    /**
-     * Computed field: Potential profit for TP1 (absolute value)
-     */
     @JsonProperty("potentialProfitTp1")
     public BigDecimal getPotentialProfitTp1() {
         if (entryPrice != null && takeProfit1 != null) {
@@ -54,9 +44,6 @@ public class AiSignalResponseDto {
         return null;
     }
 
-    /**
-     * Computed field: Risk amount (absolute value of SL distance)
-     */
     @JsonProperty("riskAmount")
     public BigDecimal getRiskAmount() {
         if (entryPrice != null && stopLoss != null) {

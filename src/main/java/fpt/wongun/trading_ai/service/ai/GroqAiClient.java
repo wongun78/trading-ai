@@ -20,16 +20,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Groq-powered AI client for generating trade suggestions.
- * Uses Llama 3.3 70B or other open-source models via Groq's fast inference API.
- * 
- * FREE API: https://console.groq.com
- * Models: llama-3.3-70b-versatile, llama-3.1-70b-versatile, mixtral-8x7b-32768
- * 
- * @Primary when groq.enabled=true, overriding OpenAI client
- * @ConditionalOnProperty enables this bean only when groq.enabled=true
- */
 @Component
 @Primary
 @ConditionalOnProperty(prefix = "groq", name = "enabled", havingValue = "true")
@@ -40,16 +30,8 @@ public class GroqAiClient implements AiClient {
     private final GroqProperties groqProperties;
     private final ObjectMapper objectMapper;
 
-    /**
-     * Lazy-initialized WebClient for Groq API.
-     * Created on first use to avoid initialization if Groq is disabled.
-     */
     private WebClient groqWebClient;
 
-    /**
-     * System prompt defining the AI's role and trading philosophy.
-     * Based on Bob Volman's price action scalping methodology.
-     */
     private static final String SYSTEM_PROMPT = """
         You are Bob Volman, world-renowned price action scalper and author of "Forex Price Action Scalping".
         
@@ -102,9 +84,6 @@ public class GroqAiClient implements AiClient {
         - You NEVER force a trade - if it's not textbook, it's NEUTRAL
         """;
 
-    /**
-     * Get or create WebClient for Groq API.
-     */
     private WebClient getGroqWebClient() {
         if (groqWebClient == null) {
             groqWebClient = WebClient.builder()
@@ -148,11 +127,6 @@ public class GroqAiClient implements AiClient {
         }
     }
 
-    /**
-     * Trim context to last N candles based on trading mode.
-     * SCALPING: last 50 candles
-     * INTRADAY: last 100 candles
-     */
     private TradeAnalysisContext trimContextByMode(TradeAnalysisContext context, String mode) {
         int candleLimit = mode.equalsIgnoreCase("SCALPING") ? 50 : 100;
 
@@ -189,9 +163,6 @@ public class GroqAiClient implements AiClient {
                 .build();
     }
 
-    /**
-     * Build the user prompt with trading mode instructions and market context.
-     */
     private String buildUserPrompt(String mode, String contextJson) {
         return """
             MODE: %s
@@ -213,8 +184,7 @@ public class GroqAiClient implements AiClient {
             - "Notice the long lower wick on candle #48 at EMA21 - buyers stepped in hard"
             
             Be SPECIFIC with candle numbers, prices, and what happened.
-            
-            
+
             STEP 2: IDENTIFY THE SWING STRUCTURE
             ─────────────────────────────────────────────────────────────
             Mark the last 3-4 swing highs and lows with EXACT prices:
@@ -228,8 +198,7 @@ public class GroqAiClient implements AiClient {
             "This is LH/LL structure = confirmed downtrend"
             
             If structure is MIXED (both HH and LL), say so and lean toward NEUTRAL.
-            
-            
+
             STEP 3: CHECK EMA INTERACTION
             ─────────────────────────────────────────────────────────────
             Answer these questions:
@@ -243,8 +212,7 @@ public class GroqAiClient implements AiClient {
             3. Is price extended or near EMA?
                - Extended = >0.5%% away from both EMAs → WAIT for pullback
                - Near = within 0.2%% → Look for entry pattern
-            
-            
+
             STEP 4: PATTERN RECOGNITION (Bob Volman Setups)
             ─────────────────────────────────────────────────────────────
             Identify if you see one of these CLASSIC setups:
@@ -262,8 +230,7 @@ public class GroqAiClient implements AiClient {
               - Very tight consolidation (3-5 candles) → clean break with momentum
             
             ✗ If NONE of these are present, say "No clear Volman pattern" → NEUTRAL
-            
-            
+
             STEP 5: ENTRY TRIGGER & RISK PLACEMENT
             ─────────────────────────────────────────────────────────────
             If pattern exists:
@@ -281,8 +248,7 @@ public class GroqAiClient implements AiClient {
             - SCALPING: 1.2R-1.8R (quick targets, tight R:R)
             - INTRADAY: 1.5R-3.0R (swing targets, wider R:R)
             - Example: "TP1 at 96100 (+680pts = 1.19R), TP2 at 96550 (+1130pts = 1.98R)"
-            
-            
+
             STEP 6: FINAL DECISION
             ─────────────────────────────────────────────────────────────
             Ask yourself (Bob Volman style):
@@ -301,8 +267,7 @@ public class GroqAiClient implements AiClient {
             
             If all checks pass → LONG or SHORT
             If ANY doubt → NEUTRAL with specific reason
-            
-            
+
             ═══════════════════════════════════════════════════════════════
             MODE-SPECIFIC RULES
             ═══════════════════════════════════════════════════════════════
@@ -320,8 +285,7 @@ public class GroqAiClient implements AiClient {
             • TP1/TP2/TP3 targets: 1.5R / 2.5R / 3.0R
             • Allow slightly messier consolidation if macro trend is pristine
             • Example: "CPB after strong rally, SL at last swing, TP at structure resistance"
-            
-            
+
             ═══════════════════════════════════════════════════════════════
             RESPONSE FORMAT (STRICT JSON)
             ═══════════════════════════════════════════════════════════════
@@ -371,11 +335,6 @@ public class GroqAiClient implements AiClient {
             """.formatted(mode, contextJson);
     }
 
-    /**
-     * Call Groq Chat Completions API with retry logic.
-     * Groq API is OpenAI-compatible, so we use the same endpoint structure.
-     * Implements exponential backoff for rate limiting (429) and transient errors.
-     */
     private String callGroqApi(String userPrompt) {
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("model", groqProperties.getModel());
@@ -466,9 +425,6 @@ public class GroqAiClient implements AiClient {
         throw new RuntimeException("Groq API failed after " + maxRetries + " retries");
     }
 
-    /**
-     * Parse Groq JSON response into TradeSuggestion object.
-     */
     private TradeSuggestion parseTradeSuggestion(String responseJson) {
         try {
             // Clean up response (remove markdown code blocks if present)
@@ -532,9 +488,6 @@ public class GroqAiClient implements AiClient {
         }
     }
 
-    /**
-     * Helper to parse numeric values from Groq response.
-     */
     private BigDecimal parseDecimal(Object value) {
         if (value == null) {
             return null;
@@ -545,10 +498,6 @@ public class GroqAiClient implements AiClient {
         return null;
     }
 
-    /**
-     * Create a fallback NEUTRAL suggestion when API call fails.
-     * Provides user-friendly error messages.
-     */
     private TradeSuggestion createFallbackSuggestion(String errorMessage) {
         String userFriendlyMessage;
         
@@ -572,11 +521,6 @@ public class GroqAiClient implements AiClient {
                 .build();
     }
 
-    /**
-     * Enforce Bob Volman trading guards on AI-generated suggestions.
-     * Validates stop-loss distance and risk/reward ratios.
-     * Returns NEUTRAL if validation fails.
-     */
     private TradeSuggestion enforceVolmanGuards(TradeSuggestion s, String mode) {
         if (s == null) {
             return neutral("Invalid AI response");
@@ -616,9 +560,6 @@ public class GroqAiClient implements AiClient {
         return s; // Passed validation
     }
 
-    /**
-     * Helper method to create NEUTRAL suggestion with reasoning.
-     */
     private TradeSuggestion neutral(String reason) {
         return TradeSuggestion.builder()
                 .direction(Direction.NEUTRAL)

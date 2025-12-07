@@ -9,19 +9,6 @@ import org.springframework.context.annotation.Configuration;
 
 import java.util.concurrent.TimeUnit;
 
-/**
- * Cache configuration for AI signal generation using Caffeine.
- * Caffeine is a high-performance, near-optimal caching library recommended by Spring.
- * 
- * Features:
- * - W-TinyLFU eviction policy (better than LRU)
- * - Automatic TTL with expireAfterWrite
- * - High concurrency performance
- * - Built-in metrics support
- * 
- * Cache duration: 30 seconds to balance freshness and API quota.
- * Free tier limits: 30 requests/minute = 1 request per 2 seconds
- */
 @Configuration
 @EnableCaching
 public class CacheConfig {

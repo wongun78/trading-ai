@@ -20,10 +20,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * REST Controller for position management and portfolio tracking.
- * Provides endpoints for trade execution and performance analytics.
- */
 @RestController
 @RequestMapping("/api/positions")
 @RequiredArgsConstructor
@@ -34,11 +30,6 @@ public class PositionController {
 
     private final IPositionService positionService;
 
-    /**
-     * Open a new trading position
-     * 
-     * POST /api/positions
-     */
     @PostMapping
     @PreAuthorize("hasRole('TRADER') or hasRole('ADMIN')")
     @Operation(
@@ -58,11 +49,6 @@ public class PositionController {
                 .body(ApiResponse.success(position));
     }
 
-    /**
-     * Execute a pending position (fill order)
-     * 
-     * PUT /api/positions/{id}/execute
-     */
     @PutMapping("/{id}/execute")
     public ResponseEntity<ApiResponse<PositionResponseDto>> executePosition(
             @PathVariable Long id,
@@ -74,11 +60,6 @@ public class PositionController {
         return ResponseEntity.ok(ApiResponse.success(position));
     }
 
-    /**
-     * Close an open position
-     * 
-     * PUT /api/positions/{id}/close
-     */
     @PutMapping("/{id}/close")
     public ResponseEntity<ApiResponse<PositionResponseDto>> closePosition(
             @PathVariable Long id,
@@ -91,11 +72,6 @@ public class PositionController {
         return ResponseEntity.ok(ApiResponse.success(position));
     }
 
-    /**
-     * Cancel a pending position
-     * 
-     * PUT /api/positions/{id}/cancel
-     */
     @PutMapping("/{id}/cancel")
     public ResponseEntity<ApiResponse<PositionResponseDto>> cancelPosition(@PathVariable Long id) {
         log.info("Cancelling position {}", id);
@@ -104,11 +80,6 @@ public class PositionController {
         return ResponseEntity.ok(ApiResponse.success(position));
     }
 
-    /**
-     * Get position by ID
-     * 
-     * GET /api/positions/{id}
-     */
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<PositionResponseDto>> getPosition(@PathVariable Long id) {
         log.debug("Fetching position {}", id);
@@ -117,11 +88,6 @@ public class PositionController {
         return ResponseEntity.ok(ApiResponse.success(position));
     }
 
-    /**
-     * Get all positions with pagination and filtering
-     * 
-     * GET /api/positions?symbolCode=BTCUSDT&status=OPEN&page=0&size=20
-     */
     @GetMapping
     public ResponseEntity<ApiResponse<Page<PositionResponseDto>>> getPositions(
             @RequestParam(required = false) String symbolCode,
@@ -137,11 +103,6 @@ public class PositionController {
         return ResponseEntity.ok(ApiResponse.success(positions));
     }
 
-    /**
-     * Get open positions for current user
-     * 
-     * GET /api/positions/open
-     */
     @GetMapping("/open")
     public ResponseEntity<ApiResponse<List<PositionResponseDto>>> getOpenPositions(
             @RequestParam(defaultValue = "system") String userId
@@ -152,11 +113,6 @@ public class PositionController {
         return ResponseEntity.ok(ApiResponse.success(positions));
     }
 
-    /**
-     * Get portfolio statistics
-     * 
-     * GET /api/positions/stats
-     */
     @GetMapping("/stats")
     public ResponseEntity<ApiResponse<PortfolioStatsDto>> getPortfolioStats(
             @RequestParam(defaultValue = "system") String userId

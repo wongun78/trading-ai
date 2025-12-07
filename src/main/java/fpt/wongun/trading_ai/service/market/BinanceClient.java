@@ -8,16 +8,6 @@ import reactor.core.publisher.Mono;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Client for fetching real-time market data from Binance API.
- * 
- * FREE - No API key required for public market data.
- * 
- * Binance API Docs: https://binance-docs.github.io/apidocs/spot/en/
- * 
- * Supported intervals:
- * - 1m, 3m, 5m, 15m, 30m, 1h, 2h, 4h, 6h, 8h, 12h, 1d, 3d, 1w, 1M
- */
 @Service
 @Slf4j
 public class BinanceClient {
@@ -31,17 +21,6 @@ public class BinanceClient {
                 .build();
     }
 
-    /**
-     * Fetch klines/candlestick data from Binance.
-     * 
-     * @param symbol Trading pair (e.g., "BTCUSDT", "ETHUSDT")
-     * @param interval Timeframe (e.g., "5m", "15m", "1h")
-     * @param limit Number of candles to fetch (max 1000, default 500)
-     * @return List of BinanceKline objects
-     * 
-     * Example:
-     * fetchKlines("BTCUSDT", "5m", 200)
-     */
     public List<BinanceKline> fetchKlines(String symbol, String interval, int limit) {
         try {
             log.info("Fetching {} candles for {}/{} from Binance...", limit, symbol, interval);
@@ -82,12 +61,6 @@ public class BinanceClient {
         }
     }
 
-    /**
-     * Map Binance interval to your internal timeframe format.
-     * 
-     * Binance: 5m, 15m, 1h
-     * Your system: M5, M15, H1
-     */
     public static String mapIntervalToTimeframe(String binanceInterval) {
         return switch (binanceInterval) {
             case "1m" -> "M1";
@@ -102,9 +75,6 @@ public class BinanceClient {
         };
     }
 
-    /**
-     * Map your timeframe format to Binance interval.
-     */
     public static String mapTimeframeToInterval(String timeframe) {
         return switch (timeframe.toUpperCase()) {
             case "M1" -> "1m";
@@ -119,10 +89,6 @@ public class BinanceClient {
         };
     }
 
-    /**
-     * Check if symbol is valid on Binance.
-     * Common pairs: BTCUSDT, ETHUSDT, BNBUSDT, ADAUSDT, SOLUSDT
-     */
     public boolean isValidSymbol(String symbol) {
         try {
             List<BinanceKline> klines = fetchKlines(symbol, "5m", 1);

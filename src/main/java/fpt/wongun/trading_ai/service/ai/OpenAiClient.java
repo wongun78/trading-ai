@@ -20,14 +20,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * OpenAI-powered AI client for generating trade suggestions.
- * Uses GPT models to analyze market data and provide Bob Volman-style
- * price action trading recommendations.
- * 
- * Only active when groq.enabled=false (fallback to OpenAI).
- * @Primary when active to override MockAiClient.
- */
 @Component
 @Primary
 @ConditionalOnProperty(prefix = "groq", name = "enabled", havingValue = "false", matchIfMissing = false)
@@ -39,10 +31,6 @@ public class OpenAiClient implements AiClient {
     private final WebClient openAiWebClient;
     private final ObjectMapper objectMapper;
 
-    /**
-     * System prompt defining the AI's role and trading philosophy.
-     * Based on Bob Volman's price action scalping methodology.
-     */
     private static final String SYSTEM_PROMPT = """
         You are an expert intraday price action trader, trading strictly in the style of Bob Volman.
         
@@ -89,11 +77,6 @@ public class OpenAiClient implements AiClient {
         }
     }
 
-    /**
-     * Trim context to last N candles based on trading mode.
-     * SCALPING: last 50 candles
-     * INTRADAY: last 100 candles
-     */
     private TradeAnalysisContext trimContextByMode(TradeAnalysisContext context, String mode) {
         int candleLimit = mode.equalsIgnoreCase("SCALPING") ? 50 : 100;
 
@@ -130,9 +113,6 @@ public class OpenAiClient implements AiClient {
                 .build();
     }
 
-    /**
-     * Build the user prompt with trading mode instructions and market context.
-     */
     private String buildUserPrompt(String mode, String contextJson) {
         return """
             MODE: %s
@@ -195,15 +175,6 @@ public class OpenAiClient implements AiClient {
             """.formatted(mode, contextJson);
     }
 
-    /**
-     * Call OpenAI Chat Completions API.
-     * 
-     * Prompt engineering tips:
-     * - Adjust temperature in application.yml for creativity vs consistency
-     * - System prompt defines the "personality" and expertise
-     * - User prompt provides specific task and context
-     * - Request JSON-only output to simplify parsing
-     */
     private String callOpenAiApi(String userPrompt) {
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("model", openAiProperties.getModel());
@@ -246,12 +217,6 @@ public class OpenAiClient implements AiClient {
         return content.trim();
     }
 
-    /**
-     * Parse OpenAI JSON response into TradeSuggestion object.
-     * 
-     * This is where the JSON string from OpenAI gets converted to our domain model.
-     * If parsing fails, we log the error and return a fallback NEUTRAL suggestion.
-     */
     private TradeSuggestion parseTradeSuggestion(String responseJson) {
         try {
             // Clean up response (remove markdown code blocks if present)
@@ -315,9 +280,6 @@ public class OpenAiClient implements AiClient {
         }
     }
 
-    /**
-     * Helper to parse numeric values from OpenAI response.
-     */
     private java.math.BigDecimal parseDecimal(Object value) {
         if (value == null) {
             return null;
@@ -328,9 +290,6 @@ public class OpenAiClient implements AiClient {
         return null;
     }
 
-    /**
-     * Create a fallback NEUTRAL suggestion when API call fails.
-     */
     private TradeSuggestion createFallbackSuggestion(String errorMessage) {
         return TradeSuggestion.builder()
                 .direction(Direction.NEUTRAL)
@@ -338,11 +297,6 @@ public class OpenAiClient implements AiClient {
                 .build();
     }
 
-    /**
-     * Enforce Bob Volman trading guards on AI-generated suggestions.
-     * Validates stop-loss distance and risk/reward ratios.
-     * Returns NEUTRAL if validation fails.
-     */
     private TradeSuggestion enforceVolmanGuards(TradeSuggestion s, String mode) {
         if (s == null) {
             return neutral("Invalid AI response");
@@ -382,9 +336,6 @@ public class OpenAiClient implements AiClient {
         return s; // Passed validation
     }
 
-    /**
-     * Helper method to create NEUTRAL suggestion with reasoning.
-     */
     private TradeSuggestion neutral(String reason) {
         return TradeSuggestion.builder()
                 .direction(Direction.NEUTRAL)

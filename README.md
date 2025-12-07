@@ -10,9 +10,17 @@
 
 Enterprise-grade AI trading system dựa trên **Bob Volman Price Action**, sử dụng Groq AI (Llama 3.3 70B) + OpenAI GPT-4 fallback. Includes Spring Security + JWT authentication, RBAC, type-safe enums, soft delete, auditing, global exception handling, và Volman Guards validation.
 
-## 🔒 Security Notice
+## 📊 Current Status (Dec 7, 2025)
 
-**⚠️ IMPORTANT**: If you cloned this repo before Dec 3, 2025, please read [SECURITY_NOTICE.md](SECURITY_NOTICE.md) immediately!
+✅ **Backend**: Running on port 8080  
+✅ **Database**: PostgreSQL 18.1 healthy  
+✅ **Market Data**: 400 real-time candles from Binance  
+├─ BTCUSDT: 200 M5 candles (Latest: $89,469.13)  
+└─ ETHUSDT: 200 M5 candles (Latest: $3,037.91)  
+✅ **Scheduler**: Auto-sync every 5 seconds  
+✅ **Authentication**: JWT + Spring Security working  
+⏳ **Signals**: Ready to generate (0 created)  
+⏳ **Positions**: Ready to trade (0 open)
 
 ## 📋 Mục Lục
 
@@ -379,14 +387,16 @@ $env:OPENAI_API_KEY="sk-your-actual-openai-key-here"
 ### 5. Build & Run
 
 ```bash
-# Build project
-./mvnw clean package -DskipTests
+# Development mode (recommended - with auto-reload)
+chmod +x dev.sh
+./dev.sh
 
-# Run application
-java -jar target/trading-ai-0.0.1-SNAPSHOT.jar
-
-# Hoặc chạy trực tiếp với Maven
+# Or run with Maven directly
 ./mvnw spring-boot:run
+
+# Production build
+./mvnw clean package -DskipTests
+java -jar target/trading-ai-0.0.1-SNAPSHOT.jar
 ```
 
 ### 6. Verify Installation

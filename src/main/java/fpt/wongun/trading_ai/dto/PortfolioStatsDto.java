@@ -7,10 +7,6 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 
-/**
- * Portfolio statistics DTO.
- * Provides comprehensive performance metrics for a user's trading activity.
- */
 @Data
 @Builder
 @NoArgsConstructor
