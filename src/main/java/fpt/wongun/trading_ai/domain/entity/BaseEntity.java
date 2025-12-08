@@ -31,26 +31,5 @@ public abstract class BaseEntity {
 
     @LastModifiedBy
     @Column(length = 100)
-    private String lastModifiedBy;
-
-    @Version
-    private Long version;  // Optimistic locking
-
-    @Column(nullable = false)
-    private Boolean deleted = false;
-
-    private Instant deletedAt;
-
-    @Column(length = 100)
-    private String deletedBy;
-
-    public void softDelete(String deletedBy) {
-        this.deleted = true;
-        this.deletedAt = Instant.now();
-        this.deletedBy = deletedBy;
-    }
-
-    public boolean isDeleted() {
-        return Boolean.TRUE.equals(deleted);
-    }
+    private String updatedBy;
 }

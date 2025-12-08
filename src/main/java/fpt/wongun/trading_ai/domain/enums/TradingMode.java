@@ -19,7 +19,7 @@ public enum TradingMode {
 
     public static TradingMode fromString(String mode) {
         if (mode == null) {
-            return SCALPING; // Default
+            return SCALPING; 
         }
         try {
             return TradingMode.valueOf(mode.toUpperCase());

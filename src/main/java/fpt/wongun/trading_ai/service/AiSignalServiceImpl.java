@@ -68,12 +68,8 @@ public class AiSignalServiceImpl implements IAiSignalService {
                 .direction(suggestion.getDirection())
                 .entryPrice(suggestion.getEntryPrice())
                 .stopLoss(suggestion.getStopLoss())
-                .takeProfit1(suggestion.getTakeProfit1())
-                .takeProfit2(suggestion.getTakeProfit2())
-                .takeProfit3(suggestion.getTakeProfit3())
-                .riskReward1(suggestion.getRiskReward1())
-                .riskReward2(suggestion.getRiskReward2())
-                .riskReward3(suggestion.getRiskReward3())
+                .takeProfit(suggestion.getTakeProfit())
+                .riskReward(suggestion.getRiskReward())
                 .reasoning(suggestion.getReasoning())
                 .build();
 
@@ -157,16 +153,16 @@ public class AiSignalServiceImpl implements IAiSignalService {
             );
         }
 
-        // Validate at least TP1 exists
-        if (signal.getTakeProfit1() == null) {
+        // Validate at least TP exists
+        if (signal.getTakeProfit() == null) {
             throw new InvalidSignalException("Signal missing take profit level");
         }
 
         // Validate R:R ratio (must be > 1.0 for valid setups)
-        if (signal.getRiskReward1() != null && 
-            signal.getRiskReward1().compareTo(BigDecimal.ONE) < 0) {
+        if (signal.getRiskReward() != null && 
+            signal.getRiskReward().compareTo(BigDecimal.ONE) < 0) {
             log.warn("Low R:R ratio detected: {}. Signal may not be worth taking.", 
-                    signal.getRiskReward1());
+                    signal.getRiskReward());
         }
     }
 
@@ -178,12 +174,8 @@ public class AiSignalServiceImpl implements IAiSignalService {
                 .direction(s.getDirection())
                 .entryPrice(s.getEntryPrice())
                 .stopLoss(s.getStopLoss())
-                .takeProfit1(s.getTakeProfit1())
-                .takeProfit2(s.getTakeProfit2())
-                .takeProfit3(s.getTakeProfit3())
-                .riskReward1(s.getRiskReward1())
-                .riskReward2(s.getRiskReward2())
-                .riskReward3(s.getRiskReward3())
+                .takeProfit(s.getTakeProfit())
+                .riskReward(s.getRiskReward())
                 .reasoning(s.getReasoning())
                 .createdAt(s.getCreatedAt())
                 .build();

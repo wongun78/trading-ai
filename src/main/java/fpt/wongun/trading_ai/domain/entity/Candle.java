@@ -4,8 +4,6 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
-import org.hibernate.annotations.SQLDelete;
-import org.hibernate.annotations.SQLRestriction;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -21,8 +19,6 @@ import java.time.Instant;
        indexes = {
            @Index(name = "idx_candle_symbol_tf_time", columnList = "symbol_id,timeframe,timestamp")
        })
-@SQLDelete(sql = "UPDATE candles SET deleted = true, deleted_at = NOW(), deleted_by = 'SYSTEM' WHERE id = ? AND version = ?")
-@SQLRestriction("deleted = false")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -41,7 +37,7 @@ public class Candle extends BaseEntity {
 
     @NotNull(message = "Timeframe is required")
     @Column(nullable = false, length = 10)
-    private String timeframe; // M1, M5, M15... (keeping as String for backward compatibility)
+    private String timeframe; 
 
     @NotNull(message = "Timestamp is required")
     @Column(nullable = false)

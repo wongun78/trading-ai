@@ -5,8 +5,6 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
-import org.hibernate.annotations.SQLDelete;
-import org.hibernate.annotations.SQLRestriction;
 
 import java.math.BigDecimal;
 
@@ -16,8 +14,6 @@ import java.math.BigDecimal;
            @Index(name = "idx_signal_symbol_tf_time", columnList = "symbol_id,timeframe,created_at"),
            @Index(name = "idx_signal_direction", columnList = "direction,created_at")
        })
-@SQLDelete(sql = "UPDATE ai_signals SET deleted = true, deleted_at = NOW(), deleted_by = 'SYSTEM' WHERE id = ? AND version = ?")
-@SQLRestriction("deleted = false")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -52,25 +48,13 @@ public class AiSignal extends BaseEntity {
     private BigDecimal stopLoss;
 
     @Column(precision = 28, scale = 18)
-    private BigDecimal takeProfit1;
-
-    @Column(precision = 28, scale = 18)
-    private BigDecimal takeProfit2;
-
-    @Column(precision = 28, scale = 18)
-    private BigDecimal takeProfit3;
+    private BigDecimal takeProfit;
 
     @Column(precision = 10, scale = 2)
-    private BigDecimal riskReward1;
-
-    @Column(precision = 10, scale = 2)
-    private BigDecimal riskReward2;
-
-    @Column(precision = 10, scale = 2)
-    private BigDecimal riskReward3;
+    private BigDecimal riskReward;
 
     @Column(columnDefinition = "TEXT")
-    private String reasoning; // JSON or long text
+    private String reasoning;
 
     @PrePersist
     @PreUpdate

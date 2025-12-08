@@ -32,11 +32,7 @@ public class OpenPositionRequestDto {
     @Positive(message = "Stop loss must be positive")
     private BigDecimal stopLoss;
 
-    private BigDecimal takeProfit1;
-
-    private BigDecimal takeProfit2;
-
-    private BigDecimal takeProfit3;
+    private BigDecimal takeProfit;
 
     @NotNull(message = "Quantity is required")
     @Positive(message = "Quantity must be positive")

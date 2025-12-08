@@ -22,12 +22,8 @@ public class AiSignalResponseDto {
     private Direction direction;
     private BigDecimal entryPrice;
     private BigDecimal stopLoss;
-    private BigDecimal takeProfit1;
-    private BigDecimal takeProfit2;
-    private BigDecimal takeProfit3;
-    private BigDecimal riskReward1;
-    private BigDecimal riskReward2;
-    private BigDecimal riskReward3;
+    private BigDecimal takeProfit;
+    private BigDecimal riskReward;
     private String reasoning;
     private Instant createdAt;
 
@@ -36,10 +32,10 @@ public class AiSignalResponseDto {
         return direction != null && direction != Direction.NEUTRAL;
     }
 
-    @JsonProperty("potentialProfitTp1")
-    public BigDecimal getPotentialProfitTp1() {
-        if (entryPrice != null && takeProfit1 != null) {
-            return takeProfit1.subtract(entryPrice).abs();
+    @JsonProperty("potentialProfit")
+    public BigDecimal getPotentialProfit() {
+        if (entryPrice != null && takeProfit != null) {
+            return takeProfit.subtract(entryPrice).abs();
         }
         return null;
     }

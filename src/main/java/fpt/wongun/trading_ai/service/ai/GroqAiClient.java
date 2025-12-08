@@ -304,12 +304,8 @@ public class GroqAiClient implements AiClient {
               "direction": "LONG" | "SHORT" | "NEUTRAL",
               "entryPrice": number or null,
               "stopLoss": number or null,
-              "takeProfit1": number or null,
-              "takeProfit2": number or null,
-              "takeProfit3": number or null,
-              "riskReward1": number or null,
-              "riskReward2": number or null,
-              "riskReward3": number or null,
+              "takeProfit": number or null,
+              "riskReward": number or null,
               "reasoning": "Multi-line Bob Volman style analysis as described above"
             }
             
@@ -318,7 +314,7 @@ public class GroqAiClient implements AiClient {
             Structure: HH/HL confirmed - H1=95200, L1=94850, H2=95420, L2=95100, H3=95680, L3=95350. Clear uptrend intact.
             EMA: Price pulled back to EMA21(95320), now sitting +30pts above. Previous touch 5 candles ago showed 180pt rejection wick.
             Pattern: Classic DBD (Double Bottom During trend) - second touch of EMA21 with stronger rejection than first. Textbook Bob Volman setup.
-            Entry: 95400 on close above rejection candle. SL: 94850 (last major swing low) = 550pts = 0.58%% risk. TP1: 96060 (1.2R), TP2: 96775 (2.5R).
+            Entry: 95400 on close above rejection candle. SL: 94850 (last major swing low) = 550pts = 0.58%% risk. TP: 96060 (1.2R).
             Confidence: 85%% - Clean trend, textbook pattern, tight SL. Strong LONG."
             
             Example reasoning (NEUTRAL):
@@ -442,12 +438,8 @@ public class GroqAiClient implements AiClient {
                     .direction(Direction.valueOf((String) responseMap.get("direction")))
                     .entryPrice(parseDecimal(responseMap.get("entryPrice")))
                     .stopLoss(parseDecimal(responseMap.get("stopLoss")))
-                    .takeProfit1(parseDecimal(responseMap.get("takeProfit1")))
-                    .takeProfit2(parseDecimal(responseMap.get("takeProfit2")))
-                    .takeProfit3(parseDecimal(responseMap.get("takeProfit3")))
-                    .riskReward1(parseDecimal(responseMap.get("riskReward1")))
-                    .riskReward2(parseDecimal(responseMap.get("riskReward2")))
-                    .riskReward3(parseDecimal(responseMap.get("riskReward3")))
+                    .takeProfit(parseDecimal(responseMap.get("takeProfit")))
+                    .riskReward(parseDecimal(responseMap.get("riskReward")))
                     .reasoning((String) responseMap.get("reasoning"))
                     .build();
 
@@ -472,12 +464,8 @@ public class GroqAiClient implements AiClient {
                         .direction(Direction.valueOf((String) responseMap.get("direction")))
                         .entryPrice(parseDecimal(responseMap.get("entryPrice")))
                         .stopLoss(parseDecimal(responseMap.get("stopLoss")))
-                        .takeProfit1(parseDecimal(responseMap.get("takeProfit1")))
-                        .takeProfit2(parseDecimal(responseMap.get("takeProfit2")))
-                        .takeProfit3(parseDecimal(responseMap.get("takeProfit3")))
-                        .riskReward1(parseDecimal(responseMap.get("riskReward1")))
-                        .riskReward2(parseDecimal(responseMap.get("riskReward2")))
-                        .riskReward3(parseDecimal(responseMap.get("riskReward3")))
+                        .takeProfit(parseDecimal(responseMap.get("takeProfit")))
+                        .riskReward(parseDecimal(responseMap.get("riskReward")))
                         .reasoning((String) responseMap.get("reasoning"))
                         .build();
                         
@@ -550,10 +538,10 @@ public class GroqAiClient implements AiClient {
         }
 
         // RR sanity rule
-        if (s.getRiskReward1() != null) {
-            if (s.getRiskReward1().compareTo(BigDecimal.valueOf(1.0)) < 0 ||
-                    s.getRiskReward1().compareTo(BigDecimal.valueOf(4.0)) > 0) {
-                return neutral("RR1 out of range — rejected by Volman guard");
+        if (s.getRiskReward() != null) {
+            if (s.getRiskReward().compareTo(BigDecimal.valueOf(1.0)) < 0 ||
+                    s.getRiskReward().compareTo(BigDecimal.valueOf(4.0)) > 0) {
+                return neutral("RR out of range — rejected by Volman guard");
             }
         }
 
@@ -565,12 +553,8 @@ public class GroqAiClient implements AiClient {
                 .direction(Direction.NEUTRAL)
                 .entryPrice(null)
                 .stopLoss(null)
-                .takeProfit1(null)
-                .takeProfit2(null)
-                .takeProfit3(null)
-                .riskReward1(null)
-                .riskReward2(null)
-                .riskReward3(null)
+                .takeProfit(null)
+                .riskReward(null)
                 .reasoning(reason)
                 .build();
     }

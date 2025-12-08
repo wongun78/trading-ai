@@ -16,5 +16,5 @@ public enum Direction {
     private final String action;
     private final String displayName;
     private final String arrow;
-    private final String color;  // Hex color for frontend
+    private final String color;  
 }

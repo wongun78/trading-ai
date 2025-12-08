@@ -159,12 +159,8 @@ public class OpenAiClient implements AiClient {
               "direction": "LONG" | "SHORT" | "NEUTRAL",
               "entryPrice": number or null,
               "stopLoss": number or null,
-              "takeProfit1": number or null,
-              "takeProfit2": number or null,
-              "takeProfit3": number or null,
-              "riskReward1": number or null,
-              "riskReward2": number or null,
-              "riskReward3": number or null,
+              "takeProfit": number or null,
+              "riskReward": number or null,
               "reasoning": "1-3 sentence explanation"
             }
             
@@ -234,12 +230,8 @@ public class OpenAiClient implements AiClient {
                     .direction(Direction.valueOf((String) responseMap.get("direction")))
                     .entryPrice(parseDecimal(responseMap.get("entryPrice")))
                     .stopLoss(parseDecimal(responseMap.get("stopLoss")))
-                    .takeProfit1(parseDecimal(responseMap.get("takeProfit1")))
-                    .takeProfit2(parseDecimal(responseMap.get("takeProfit2")))
-                    .takeProfit3(parseDecimal(responseMap.get("takeProfit3")))
-                    .riskReward1(parseDecimal(responseMap.get("riskReward1")))
-                    .riskReward2(parseDecimal(responseMap.get("riskReward2")))
-                    .riskReward3(parseDecimal(responseMap.get("riskReward3")))
+                    .takeProfit(parseDecimal(responseMap.get("takeProfit")))
+                    .riskReward(parseDecimal(responseMap.get("riskReward")))
                     .reasoning((String) responseMap.get("reasoning"))
                     .build();
 
@@ -264,12 +256,8 @@ public class OpenAiClient implements AiClient {
                         .direction(Direction.valueOf((String) responseMap.get("direction")))
                         .entryPrice(parseDecimal(responseMap.get("entryPrice")))
                         .stopLoss(parseDecimal(responseMap.get("stopLoss")))
-                        .takeProfit1(parseDecimal(responseMap.get("takeProfit1")))
-                        .takeProfit2(parseDecimal(responseMap.get("takeProfit2")))
-                        .takeProfit3(parseDecimal(responseMap.get("takeProfit3")))
-                        .riskReward1(parseDecimal(responseMap.get("riskReward1")))
-                        .riskReward2(parseDecimal(responseMap.get("riskReward2")))
-                        .riskReward3(parseDecimal(responseMap.get("riskReward3")))
+                        .takeProfit(parseDecimal(responseMap.get("takeProfit")))
+                        .riskReward(parseDecimal(responseMap.get("riskReward")))
                         .reasoning((String) responseMap.get("reasoning"))
                         .build();
                         
@@ -326,10 +314,10 @@ public class OpenAiClient implements AiClient {
         }
 
         // RR sanity rule
-        if (s.getRiskReward1() != null) {
-            if (s.getRiskReward1().compareTo(BigDecimal.valueOf(1.0)) < 0 ||
-                s.getRiskReward1().compareTo(BigDecimal.valueOf(4.0)) > 0) {
-                return neutral("RR1 out of range — rejected by Volman guard");
+        if (s.getRiskReward() != null) {
+            if (s.getRiskReward().compareTo(BigDecimal.valueOf(1.0)) < 0 ||
+                s.getRiskReward().compareTo(BigDecimal.valueOf(4.0)) > 0) {
+                return neutral("RR out of range — rejected by Volman guard");
             }
         }
 
@@ -341,12 +329,8 @@ public class OpenAiClient implements AiClient {
                 .direction(Direction.NEUTRAL)
                 .entryPrice(null)
                 .stopLoss(null)
-                .takeProfit1(null)
-                .takeProfit2(null)
-                .takeProfit3(null)
-                .riskReward1(null)
-                .riskReward2(null)
-                .riskReward3(null)
+                .takeProfit(null)
+                .riskReward(null)
                 .reasoning(reason)
                 .build();
     }

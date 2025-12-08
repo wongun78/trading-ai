@@ -2,8 +2,6 @@ package fpt.wongun.trading_ai.domain.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.SQLDelete;
-import org.hibernate.annotations.SQLRestriction;
 
 import java.util.Set;
 
@@ -12,8 +10,6 @@ import java.util.Set;
     @Index(name = "idx_user_username", columnList = "username"),
     @Index(name = "idx_user_email", columnList = "email")
 })
-@SQLDelete(sql = "UPDATE users SET deleted = true, deleted_at = NOW(), deleted_by = 'SYSTEM' WHERE id = ? AND version = ?")
-@SQLRestriction("deleted = false")
 @Getter
 @Setter
 @NoArgsConstructor

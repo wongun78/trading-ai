@@ -12,11 +12,7 @@ public class TradeSuggestion {
     private Direction direction;
     private BigDecimal entryPrice;
     private BigDecimal stopLoss;
-    private BigDecimal takeProfit1;
-    private BigDecimal takeProfit2;
-    private BigDecimal takeProfit3;
-    private BigDecimal riskReward1;
-    private BigDecimal riskReward2;
-    private BigDecimal riskReward3;
+    private BigDecimal takeProfit;
+    private BigDecimal riskReward;
     private String reasoning;
 }

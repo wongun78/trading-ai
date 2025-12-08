@@ -20,7 +20,7 @@ public class AiSuggestRequestDto {
     private String symbolCode;
 
     @NotBlank(message = "Timeframe is required (e.g., M5, M15, H1)")
-    private String timeframe; // e.g. M5, M15, H1
+    private String timeframe; 
 
     @NotNull(message = "Trading mode is required (SCALPING, INTRADAY, or SWING)")
     private TradingMode mode;

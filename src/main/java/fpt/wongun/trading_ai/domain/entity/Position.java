@@ -7,8 +7,6 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.*;
-import org.hibernate.annotations.SQLDelete;
-import org.hibernate.annotations.SQLRestriction;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -21,8 +19,6 @@ import java.time.Instant;
            @Index(name = "idx_position_opened_at", columnList = "opened_at"),
            @Index(name = "idx_position_user", columnList = "created_by,status")
        })
-@SQLDelete(sql = "UPDATE positions SET deleted = true, deleted_at = NOW(), deleted_by = 'SYSTEM' WHERE id = ? AND version = ?")
-@SQLRestriction("deleted = false")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -65,13 +61,7 @@ public class Position extends BaseEntity {
     private BigDecimal stopLoss;
 
     @Column(precision = 28, scale = 18)
-    private BigDecimal takeProfit1;
-
-    @Column(precision = 28, scale = 18)
-    private BigDecimal takeProfit2;
-
-    @Column(precision = 28, scale = 18)
-    private BigDecimal takeProfit3;
+    private BigDecimal takeProfit;
 
     @Column(precision = 28, scale = 18)
     private BigDecimal exitPrice;

@@ -27,9 +27,7 @@ public class PositionResponseDto {
     private BigDecimal plannedEntryPrice;
     private BigDecimal actualEntryPrice;
     private BigDecimal stopLoss;
-    private BigDecimal takeProfit1;
-    private BigDecimal takeProfit2;
-    private BigDecimal takeProfit3;
+    private BigDecimal takeProfit;
     private BigDecimal exitPrice;
 
     // Position details

@@ -11,8 +11,6 @@ import fpt.wongun.trading_ai.repository.CandleRepository;
 import fpt.wongun.trading_ai.repository.SymbolRepository;
 import fpt.wongun.trading_ai.service.market.BinanceClient;
 import fpt.wongun.trading_ai.service.market.BinanceKline;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
@@ -67,6 +65,7 @@ public class CandleAdminController {
                         .high(c.getHigh())
                         .low(c.getLow())
                         .close(c.getClose())
+                        .volume(c.getVolume())
                         .build())
                 .collect(java.util.stream.Collectors.toList());
         
