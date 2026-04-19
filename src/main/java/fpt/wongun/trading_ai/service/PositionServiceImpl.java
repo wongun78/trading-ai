@@ -42,18 +42,15 @@ public class PositionServiceImpl implements IPositionService {
         log.info("Opening new position for symbol: {}, direction: {}", 
                 request.getSymbolCode(), request.getDirection());
 
-        // Validate symbol exists
         Symbol symbol = symbolRepository.findByCode(request.getSymbolCode())
                 .orElseThrow(() -> new SymbolNotFoundException(request.getSymbolCode()));
 
-        // Get AI signal if provided
         AiSignal signal = null;
         if (request.getSignalId() != null) {
             signal = aiSignalRepository.findById(request.getSignalId())
                     .orElse(null);
         }
 
-        // Create position
         Position position = Position.builder()
                 .signal(signal)
                 .symbol(symbol)
@@ -80,10 +77,8 @@ public class PositionServiceImpl implements IPositionService {
         Position position = positionRepository.findById(positionId)
                 .orElseThrow(() -> new PositionNotFoundException(positionId));
         
-        // Check ownership (only owner or admin can execute)
         validateOwnership(position);
         
-        // Check ownership (only owner or admin can close)
         validateOwnership(position);
 
         if (position.getStatus() != PositionStatus.PENDING) {
@@ -112,7 +107,6 @@ public class PositionServiceImpl implements IPositionService {
             throw new InvalidPositionException("Position must be OPEN to close");
         }
 
-        // Update position
         position.setStatus(PositionStatus.CLOSED);
         position.setExitPrice(request.getExitPrice());
         position.setExitReason(request.getExitReason());
@@ -127,7 +121,6 @@ public class PositionServiceImpl implements IPositionService {
             position.setNotes(existingNotes + request.getNotes());
         }
 
-        // Calculate P&L
         position.calculateRealizedPnL();
 
         position = positionRepository.save(position);
@@ -143,7 +136,6 @@ public class PositionServiceImpl implements IPositionService {
         Position position = positionRepository.findById(positionId)
                 .orElseThrow(() -> new PositionNotFoundException(positionId));
         
-        // Check ownership
         validateOwnership(position);
 
         if (position.getStatus() != PositionStatus.PENDING) {
@@ -161,7 +153,6 @@ public class PositionServiceImpl implements IPositionService {
         Position position = positionRepository.findById(positionId)
                 .orElseThrow(() -> new PositionNotFoundException(positionId));
         
-        // Check ownership
         validateOwnership(position);
         
         return mapToDto(position);
@@ -175,7 +166,6 @@ public class PositionServiceImpl implements IPositionService {
     ) {
         Pageable pageable = PageRequest.of(page, size);
         
-        // Determine if we should filter by user
         String currentUsername = null;
         if (!securityUtils.isAdmin()) {
             currentUsername = securityUtils.getCurrentUsername();
@@ -185,7 +175,6 @@ public class PositionServiceImpl implements IPositionService {
         Page<Position> positions;
         
         if (currentUsername != null) {
-            // Non-admin: filter by user
             if (symbolCode != null && status != null) {
                 Symbol symbol = symbolRepository.findByCode(symbolCode)
                         .orElseThrow(() -> new SymbolNotFoundException(symbolCode));
@@ -204,7 +193,6 @@ public class PositionServiceImpl implements IPositionService {
                         currentUsername, pageable);
             }
         } else {
-            // Admin: see all
             if (symbolCode != null && status != null) {
                 Symbol symbol = symbolRepository.findByCode(symbolCode)
                         .orElseThrow(() -> new SymbolNotFoundException(symbolCode));
@@ -231,28 +219,23 @@ public class PositionServiceImpl implements IPositionService {
     public PortfolioStatsDto getPortfolioStats(String userId) {
         log.info("Calculating portfolio stats for user: {}", userId);
 
-        // Position counts
         long totalPositions = positionRepository.countByCreatedByAndStatus(userId, PositionStatus.CLOSED);
         long openPositions = positionRepository.countByCreatedByAndStatus(userId, PositionStatus.OPEN);
         long pendingPositions = positionRepository.countByCreatedByAndStatus(userId, PositionStatus.PENDING);
 
-        // P&L metrics
         BigDecimal totalPnL = positionRepository.getTotalPnLByUser(userId);
         BigDecimal averagePnL = positionRepository.getAveragePnLByUser(userId);
 
-        // Best/Worst trades
         List<Position> bestTrades = positionRepository.getBestTrades(userId, PageRequest.of(0, 1));
         List<Position> worstTrades = positionRepository.getWorstTrades(userId, PageRequest.of(0, 1));
 
         BigDecimal bestTradePnL = bestTrades.isEmpty() ? BigDecimal.ZERO : bestTrades.getFirst().getRealizedPnL();
         BigDecimal worstTradePnL = worstTrades.isEmpty() ? BigDecimal.ZERO : worstTrades.getFirst().getRealizedPnL();
 
-        // Win rates
         Double winRate = positionRepository.getWinRateByUser(userId);
         Double longWinRate = positionRepository.getWinRateByDirection(userId, Direction.LONG);
         Double shortWinRate = positionRepository.getWinRateByDirection(userId, Direction.SHORT);
 
-        // Average R:R
         BigDecimal averageRiskReward = positionRepository.getAverageRiskReward(userId);
 
         return PortfolioStatsDto.builder()
@@ -273,7 +256,7 @@ public class PositionServiceImpl implements IPositionService {
 
     private void validateOwnership(Position position) {
         if (securityUtils.isAdmin()) {
-            return; // Admin can access all positions
+            return; 
         }
         
         String currentUsername = securityUtils.getCurrentUsername();

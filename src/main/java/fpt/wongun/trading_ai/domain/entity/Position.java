@@ -103,7 +103,6 @@ public class Position extends BaseEntity {
     @PrePersist
     @PreUpdate
     private void validatePosition() {
-        // Validate direction vs SL
         if (direction == Direction.LONG && stopLoss != null && plannedEntryPrice != null) {
             if (stopLoss.compareTo(plannedEntryPrice) >= 0) {
                 throw new IllegalStateException("LONG position must have SL < entry price");
@@ -115,12 +114,10 @@ public class Position extends BaseEntity {
             }
         }
 
-        // Calculate duration if closed
         if (status == PositionStatus.CLOSED && openedAt != null && closedAt != null) {
             durationMs = closedAt.toEpochMilli() - openedAt.toEpochMilli();
         }
 
-        // Calculate slippage if both planned and actual entry exist
         if (actualEntryPrice != null && plannedEntryPrice != null && plannedEntryPrice.compareTo(BigDecimal.ZERO) > 0) {
             slippage = actualEntryPrice.subtract(plannedEntryPrice)
                     .divide(plannedEntryPrice, 6, java.math.RoundingMode.HALF_UP)
@@ -137,21 +134,18 @@ public class Position extends BaseEntity {
         BigDecimal priceDiff;
         if (direction == Direction.LONG) {
             priceDiff = exitPrice.subtract(actualEntryPrice);
-        } else { // SHORT
+        } else { 
             priceDiff = actualEntryPrice.subtract(exitPrice);
         }
 
-        // P&L = priceDiff * quantity - fees
         realizedPnL = priceDiff.multiply(quantity).subtract(fees != null ? fees : BigDecimal.ZERO);
 
-        // P&L percentage
         if (actualEntryPrice.compareTo(BigDecimal.ZERO) > 0) {
             realizedPnLPercent = priceDiff
                     .divide(actualEntryPrice, 6, java.math.RoundingMode.HALF_UP)
                     .multiply(BigDecimal.valueOf(100));
         }
 
-        // Actual R:R
         if (stopLoss != null && actualEntryPrice.compareTo(BigDecimal.ZERO) > 0) {
             BigDecimal risk = actualEntryPrice.subtract(stopLoss).abs();
             BigDecimal reward = priceDiff.abs();

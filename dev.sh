@@ -21,11 +21,5 @@ if [ -z "$GROQ_API_KEY" ]; then
     exit 1
 fi
 
-echo "🚀 Starting Trading AI Backend..."
-echo "📊 API Key: ${GROQ_API_KEY:0:10}...${GROQ_API_KEY: -10}"
-echo "🌐 Server: http://localhost:${SERVER_PORT:-8080}"
-echo "📝 Profile: ${SPRING_PROFILES_ACTIVE:-local}"
-echo ""
-
 # Run with Spring Boot DevTools for auto-reload
 ./mvnw spring-boot:run -Dspring-boot.run.jvmArguments="-Dspring.devtools.restart.enabled=true"

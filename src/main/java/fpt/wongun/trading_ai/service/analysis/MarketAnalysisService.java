@@ -35,7 +35,6 @@ public class MarketAnalysisService {
                     .build();
         }
 
-        // Sắp xếp lại theo thời gian tăng dần
         candles.sort(Comparator.comparing(Candle::getTimestamp));
 
         List<TradeAnalysisContext.CandlePoint> candlePoints = candles.stream()
@@ -76,20 +75,17 @@ public class MarketAnalysisService {
         BigDecimal k = BigDecimal.valueOf(2.0 / (period + 1.0));
         BigDecimal[] emaArr = new BigDecimal[closes.size()];
         
-        // First EMA value = SMA of first 'period' values
         BigDecimal sum = BigDecimal.ZERO;
         for (int i = 0; i < period; i++) {
             sum = sum.add(closes.get(i));
         }
         BigDecimal emaPrev = sum.divide(BigDecimal.valueOf(period), 6, RoundingMode.HALF_UP);
         
-        // Fill array starting from period-1 index
         for (int i = 0; i < period - 1; i++) {
-            emaArr[i] = null; // No EMA for first (period-1) candles
+            emaArr[i] = null; 
         }
         emaArr[period - 1] = emaPrev;
 
-        // Calculate EMA for remaining candles
         for (int i = period; i < closes.size(); i++) {
             BigDecimal price = closes.get(i);
             emaPrev = price.multiply(k)
@@ -98,7 +94,6 @@ public class MarketAnalysisService {
             emaArr[i] = emaPrev;
         }
         
-        // Convert to list, filtering out nulls
         return Arrays.stream(emaArr)
                 .filter(Objects::nonNull)
                 .toList();

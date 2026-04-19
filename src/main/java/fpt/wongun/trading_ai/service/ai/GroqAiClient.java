@@ -101,22 +101,16 @@ public class GroqAiClient implements AiClient {
             log.info("Requesting trade suggestion from Groq (model: {}) for {}/{} in {} mode",
                     groqProperties.getModel(), context.getSymbolCode(), context.getTimeframe(), mode);
 
-            // Trim candles based on mode (SCALPING=50, INTRADAY=100)
             TradeAnalysisContext trimmedContext = trimContextByMode(context, mode);
 
-            // Serialize trimmed context to JSON
             String contextJson = objectMapper.writeValueAsString(trimmedContext);
 
-            // Build user prompt with mode-specific instructions
             String userPrompt = buildUserPrompt(mode, contextJson);
 
-            // Call Groq API
             String responseJson = callGroqApi(userPrompt);
 
-            // Parse response into TradeSuggestion
             TradeSuggestion suggestion = parseTradeSuggestion(responseJson);
 
-            // Apply Volman guards to validate the suggestion
             suggestion = enforceVolmanGuards(suggestion, mode);
 
             return suggestion;
@@ -136,12 +130,11 @@ public class GroqAiClient implements AiClient {
 
         int candleSize = candles.size();
         if (candleSize <= candleLimit) {
-            return context; // Already within limit
+            return context; 
         }
 
         int candleStartIndex = candleSize - candleLimit;
         
-        // Calculate start index for EMAs (they may be shorter than candles)
         int ema21StartIndex = ema21 != null && ema21.size() > candleLimit 
                 ? ema21.size() - candleLimit 
                 : 0;
@@ -336,22 +329,19 @@ public class GroqAiClient implements AiClient {
         requestBody.put("model", groqProperties.getModel());
         requestBody.put("temperature", groqProperties.getTemperature());
 
-        // Build messages array
         List<Map<String, String>> messages = List.of(
                 Map.of("role", "system", "content", SYSTEM_PROMPT),
                 Map.of("role", "user", "content", userPrompt)
         );
         requestBody.put("messages", messages);
 
-        // Retry configuration
         int maxRetries = 3;
-        int retryDelayMs = 1000; // Start with 1 second
+        int retryDelayMs = 1000;
         
         for (int attempt = 1; attempt <= maxRetries; attempt++) {
             try {
                 log.debug("Groq API call attempt {}/{}", attempt, maxRetries);
                 
-                // Call API
                 Mono<Map> responseMono = getGroqWebClient().post()
                         .uri("/chat/completions")
                         .bodyValue(requestBody)
@@ -395,7 +385,6 @@ public class GroqAiClient implements AiClient {
                     errorMsg.contains("timeout")
                 );
                 
-                // Retry on rate limit or transient errors
                 if ((isRateLimitError || isTransientError) && attempt < maxRetries) {
                     log.warn("Groq API error (attempt {}/{}): {}. Retrying in {}ms...", 
                             attempt, maxRetries, errorMsg, retryDelayMs);
@@ -407,12 +396,10 @@ public class GroqAiClient implements AiClient {
                         throw new RuntimeException("Retry interrupted", ie);
                     }
                     
-                    // Exponential backoff: 1s, 2s, 4s
                     retryDelayMs *= 2;
                     continue;
                 }
                 
-                // Final attempt failed or non-retryable error
                 log.error("Groq API call failed after {} attempts: {}", attempt, errorMsg);
                 throw new RuntimeException("Groq API unavailable: " + errorMsg, e);
             }
@@ -423,7 +410,6 @@ public class GroqAiClient implements AiClient {
 
     private TradeSuggestion parseTradeSuggestion(String responseJson) {
         try {
-            // Clean up response (remove markdown code blocks if present)
             String cleanJson = responseJson
                     .replaceAll("```json\\s*", "")
                     .replaceAll("```\\s*", "")
@@ -446,7 +432,6 @@ public class GroqAiClient implements AiClient {
         } catch (JsonProcessingException e) {
             log.error("Failed to parse Groq response as JSON. Original: {}", responseJson, e);
             
-            // Try to clean and re-parse one more time with more aggressive cleaning
             try {
                 String aggressiveClean = responseJson
                         .replaceAll("(?s)```json\\s*", "")
@@ -515,7 +500,7 @@ public class GroqAiClient implements AiClient {
         }
 
         if (s.getDirection() == Direction.NEUTRAL) {
-            return s; // Already neutral, no validation needed
+            return s;
         }
 
         if (s.getEntryPrice() == null || s.getStopLoss() == null) {
@@ -528,7 +513,6 @@ public class GroqAiClient implements AiClient {
                 .divide(entry, MathContext.DECIMAL64)
                 .multiply(BigDecimal.valueOf(100));
 
-        // SL distance rules
         if (mode.equals("SCALPING") && distancePct.compareTo(BigDecimal.valueOf(0.4)) > 0) {
             return neutral("SL too wide for scalping — rejected by Volman guard");
         }
@@ -537,7 +521,6 @@ public class GroqAiClient implements AiClient {
             return neutral("SL too wide for intraday — rejected by Volman guard");
         }
 
-        // RR sanity rule
         if (s.getRiskReward() != null) {
             if (s.getRiskReward().compareTo(BigDecimal.valueOf(1.0)) < 0 ||
                     s.getRiskReward().compareTo(BigDecimal.valueOf(4.0)) > 0) {
@@ -545,7 +528,7 @@ public class GroqAiClient implements AiClient {
             }
         }
 
-        return s; // Passed validation
+        return s; 
     }
 
     private TradeSuggestion neutral(String reason) {

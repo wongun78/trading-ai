@@ -18,8 +18,8 @@ public class CacheConfig {
         CaffeineCacheManager cacheManager = new CaffeineCacheManager("aiSignals");
         cacheManager.setCaffeine(Caffeine.newBuilder()
                 .expireAfterWrite(30, TimeUnit.SECONDS)
-                .maximumSize(100) // Max 100 cached signals
-                .recordStats()); // Enable metrics for monitoring
+                .maximumSize(100) 
+                .recordStats()); 
         return cacheManager;
     }
 }

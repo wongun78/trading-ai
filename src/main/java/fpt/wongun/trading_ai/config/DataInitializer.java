@@ -34,7 +34,6 @@ public class DataInitializer implements CommandLineRunner {
     private void initializeRoles() {
         log.info("Initializing roles...");
         
-        // Create ADMIN role
         if (!roleRepository.existsByName("ROLE_ADMIN")) {
             Role adminRole = Role.builder()
                     .name("ROLE_ADMIN")
@@ -44,7 +43,6 @@ public class DataInitializer implements CommandLineRunner {
             log.info("Created ROLE_ADMIN");
         }
 
-        // Create TRADER role
         if (!roleRepository.existsByName("ROLE_TRADER")) {
             Role traderRole = Role.builder()
                     .name("ROLE_TRADER")
@@ -54,7 +52,6 @@ public class DataInitializer implements CommandLineRunner {
             log.info("Created ROLE_TRADER");
         }
 
-        // Create VIEWER role
         if (!roleRepository.existsByName("ROLE_VIEWER")) {
             Role viewerRole = Role.builder()
                     .name("ROLE_VIEWER")

@@ -42,11 +42,9 @@ public class AiSignalServiceImpl implements IAiSignalService {
         log.info("Generating AI signal for {}/{}/{}", 
                 request.getSymbolCode(), request.getTimeframe(), request.getMode());
         
-        // 1. Validate symbol exists
         Symbol symbol = symbolRepository.findByCode(request.getSymbolCode())
                 .orElseThrow(() -> new SymbolNotFoundException(request.getSymbolCode()));
 
-        // 2. Build market analysis context
         TradeAnalysisContext context = marketAnalysisService.buildContext(symbol, request.getTimeframe());
         
         if (context.getCandles() == null || context.getCandles().isEmpty()) {
@@ -55,13 +53,10 @@ public class AiSignalServiceImpl implements IAiSignalService {
             );
         }
 
-        // 3. Get AI suggestion
         TradeSuggestion suggestion = aiClient.suggestTrade(context, request.getMode().name());
 
-        // 4. Validate AI suggestion
         validateSignal(suggestion);
 
-        // 5. Save to database (auditing fields filled automatically)
         AiSignal entity = AiSignal.builder()
                 .symbol(symbol)
                 .timeframe(request.getTimeframe())
@@ -118,12 +113,10 @@ public class AiSignalServiceImpl implements IAiSignalService {
             throw new InvalidSignalException("AI returned null direction");
         }
 
-        // NEUTRAL signals don't need entry/SL validation
         if (signal.getDirection() == Direction.NEUTRAL) {
             return;
         }
 
-        // LONG/SHORT must have entry and stopLoss
         if (signal.getEntryPrice() == null) {
             throw new InvalidSignalException(
                 signal.getDirection() + " signal missing entry price"
@@ -136,7 +129,6 @@ public class AiSignalServiceImpl implements IAiSignalService {
             );
         }
 
-        // Validate stop loss is in correct direction
         if (signal.getDirection() == Direction.LONG && 
             signal.getStopLoss().compareTo(signal.getEntryPrice()) >= 0) {
             throw new InvalidSignalException(
@@ -153,12 +145,10 @@ public class AiSignalServiceImpl implements IAiSignalService {
             );
         }
 
-        // Validate at least TP exists
         if (signal.getTakeProfit() == null) {
             throw new InvalidSignalException("Signal missing take profit level");
         }
 
-        // Validate R:R ratio (must be > 1.0 for valid setups)
         if (signal.getRiskReward() != null && 
             signal.getRiskReward().compareTo(BigDecimal.ONE) < 0) {
             log.warn("Low R:R ratio detected: {}. Signal may not be worth taking.", 

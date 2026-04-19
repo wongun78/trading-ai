@@ -24,9 +24,8 @@ public class TradeAnalysisContext {
 
     private String symbolCode;
     private String timeframe;
-    private String higherTimeframeTrend; // simple: UP/DOWN/SIDEWAYS
+    private String higherTimeframeTrend;
     private List<CandlePoint> candles;
     private List<BigDecimal> ema21;
     private List<BigDecimal> ema25;
-    // support/resistance có thể để sau
 }

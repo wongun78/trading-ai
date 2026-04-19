@@ -23,7 +23,7 @@ public class BinanceSyncScheduler {
     private final SymbolRepository symbolRepository;
     private final CandleRepository candleRepository;
 
-    @Scheduled(fixedRate = 5000)  // 5 seconds
+    @Scheduled(fixedRate = 5000)  
     @Transactional
     public void syncLatestCandles() {
         log.info("Starting scheduled Binance candle sync...");

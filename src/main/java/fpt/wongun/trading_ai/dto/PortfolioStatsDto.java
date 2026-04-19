@@ -26,9 +26,9 @@ public class PortfolioStatsDto {
     private BigDecimal worstTradePnL;
 
     // Performance metrics
-    private Double winRate;              // Overall win rate
-    private Double longWinRate;          // Win rate for LONG positions
-    private Double shortWinRate;         // Win rate for SHORT positions
+    private Double winRate;              
+    private Double longWinRate;          
+    private Double shortWinRate;         
     private BigDecimal averageRiskReward;
     private BigDecimal totalFees;
 
