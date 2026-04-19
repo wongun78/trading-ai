@@ -43,3 +43,4 @@ build/
 .env.*.local
 application-local.yml
 application-local.properties
+BINANCE_INTEGRATION.md
